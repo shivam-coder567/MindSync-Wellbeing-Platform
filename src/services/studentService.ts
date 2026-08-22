@@ -59,6 +59,17 @@ export async function getStudentProfileForAuthUser(
   };
 }
 
+/**
+ * Creates the signed-in Auth user's students row and mapping when missing.
+ * Does not build a profile locally: callers must re-read via
+ * getStudentProfileForAuthUser after this returns.
+ */
+export async function ensureStudentProfileForAuthUser(): Promise<void> {
+  const { error } = await supabase.rpc("ensure_student_profile");
+
+  if (error) throw error;
+}
+
 export async function getTrustedContacts(
   studentId: string,
 ): Promise<TrustedContact[]> {

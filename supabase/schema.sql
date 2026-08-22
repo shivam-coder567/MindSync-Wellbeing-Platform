@@ -14,7 +14,9 @@ create table if not exists public.student_auth_accounts (
 alter table public.student_auth_accounts enable row level security;
 
 -- A student may see only their own mapping. No INSERT, UPDATE, or DELETE policy
--- is created: links are managed deliberately in the Supabase SQL Editor.
+-- is created: clients cannot write this table directly. New signups are linked
+-- only through public.ensure_student_profile() below. Existing students can
+-- still be linked in the SQL Editor.
 do $$
 begin
   if not exists (
@@ -26,6 +28,97 @@ begin
     execute 'create policy "Students can view their own auth mapping" on public.student_auth_accounts for select using (auth.uid() = auth_user_id)';
   end if;
 end $$;
+
+-- Idempotent signup provisioning. Runs as the function owner so it can insert
+-- the caller's mapping without adding INSERT policies (RLS stays SELECT-only
+-- for clients). The caller can only provision auth.uid(); a successful call
+-- does not grant access to any other student.
+--
+-- students.id must accept the Auth UUID (uuid or text). This does not alter
+-- students or check_ins. Re-running this script replaces the function only.
+create or replace function public.ensure_student_profile()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  linked_student_id text;
+  student_name text;
+  student_email text;
+begin
+  if uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select link.student_id
+    into linked_student_id
+  from public.student_auth_accounts as link
+  where link.auth_user_id = uid;
+
+  if linked_student_id is not null then
+    return linked_student_id;
+  end if;
+
+  select
+    coalesce(
+      nullif(trim(account.raw_user_meta_data ->> 'name'), ''),
+      nullif(trim(split_part(account.email, '@', 1)), ''),
+      'Student'
+    ),
+    account.email
+  into student_name, student_email
+  from auth.users as account
+  where account.id = uid;
+
+  begin
+    insert into public.students (
+      id,
+      name,
+      email,
+      college,
+      risk_level,
+      avatar_type,
+      avatar_value
+    )
+    values (
+      uid,
+      student_name,
+      student_email,
+      '',
+      'low',
+      'initials',
+      null
+    );
+  exception
+    when unique_violation then
+      null;
+  end;
+
+  begin
+    insert into public.student_auth_accounts (auth_user_id, student_id)
+    values (uid, uid::text);
+  exception
+    when unique_violation then
+      select link.student_id
+        into linked_student_id
+      from public.student_auth_accounts as link
+      where link.auth_user_id = uid;
+
+      if linked_student_id is not null then
+        return linked_student_id;
+      end if;
+
+      raise;
+  end;
+
+  return uid::text;
+end;
+$$;
+
+revoke all on function public.ensure_student_profile() from public;
+grant execute on function public.ensure_student_profile() to authenticated;
 
 -- Required RLS policy shape for the existing tables. Review current policies
 -- first. Add an equivalent policy only if one does not already enforce this.

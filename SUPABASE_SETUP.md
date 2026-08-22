@@ -14,8 +14,8 @@ In the Supabase dashboard, inspect:
 
 ## Add the mapping
 
-1. Run [supabase/schema.sql](supabase/schema.sql) in the SQL Editor. It only adds `student_auth_accounts`; it does not alter or delete `students` or `check_ins`.
-2. Add the mapping with the real values:
+1. Run [supabase/schema.sql](supabase/schema.sql) in the SQL Editor. It adds `student_auth_accounts` and `ensure_student_profile()`; it does not alter or delete `students` or `check_ins`. New signups create their own student row through that function after they have an Auth session. `students.id` must accept the Auth UUID (uuid or text).
+2. Existing students that should keep their current `id` can still be mapped manually:
 
 ```sql
 insert into public.student_auth_accounts (auth_user_id, student_id)

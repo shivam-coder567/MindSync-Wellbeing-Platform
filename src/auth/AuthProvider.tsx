@@ -1,7 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
-import { getStudentProfileForAuthUser } from "../services/studentService";
+import {
+  ensureStudentProfileForAuthUser,
+  getStudentProfileForAuthUser,
+} from "../services/studentService";
 import type { StudentProfile } from "../types/auth";
 
 type AuthContextValue = {
@@ -27,13 +30,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfileError(null);
 
     try {
-      const studentProfile = await getStudentProfileForAuthUser(authUserId);
+      let studentProfile = await getStudentProfileForAuthUser(authUserId);
+
+      if (!studentProfile) {
+        await ensureStudentProfileForAuthUser();
+        studentProfile = await getStudentProfileForAuthUser(authUserId);
+      }
 
       setProfile(studentProfile);
 
       if (!studentProfile) {
         setProfileError(
-          "Your account is signed in, but it has not been linked to a student record yet.",
+          "Your account is signed in, but a student record could not be created yet.",
         );
       }
     } catch (error) {
