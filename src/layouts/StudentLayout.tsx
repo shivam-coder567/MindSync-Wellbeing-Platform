@@ -1,6 +1,7 @@
 import {
   HeartHandshake,
   House,
+  Leaf,
   MessageCircle,
   ShieldAlert,
   Sparkles,
@@ -55,6 +56,11 @@ const navItems = [
     icon: ChartNoAxesCombined,
   },
   {
+    label: "Relax & Reset",
+    path: "/student/relax-reset",
+    icon: Leaf,
+  },
+  {
     label: "My profile",
     path: "/student/profile",
     icon: UserRound,
@@ -68,6 +74,11 @@ const titles: Record<string, string> = {
   "/student/professionals": "Professionals",
   "/student/chat": "Messages",
   "/student/recovery": "Recovery",
+  "/student/relax-reset": "Relax & Reset",
+  "/student/relax-reset/breathing": "Breathing Bubble",
+  "/student/relax-reset/zen-garden": "Zen Garden",
+  "/student/relax-reset/bubble-pop": "Bubble Flow",
+  "/student/relax-reset/infinity-flow": "Infinity Flow",
   "/student/sos": "Get support now",
   "/student/profile": "My profile",
 };

@@ -15,7 +15,6 @@ type ProfessionalRow = {
   verification_status: VerificationStatus;
   city: string;
   available: boolean;
-  overview: string | null;
   consultation_types: ConsultationType[] | null;
   created_at: string;
 };
@@ -67,7 +66,6 @@ function toProfessional(row: ProfessionalRow): Professional {
     verificationStatus: row.verification_status,
     city: row.city,
     available: row.available,
-    overview: row.overview,
     consultationTypes: row.consultation_types || [],
     createdAt: row.created_at,
   };
@@ -101,7 +99,7 @@ export async function getProfessionals(): Promise<Professional[]> {
   const { data, error } = await supabase
     .from("professionals")
     .select(
-      "id, name, role, specialization, verification_status, city, available, overview, consultation_types, created_at",
+      "id, name, role, specialization, verification_status, city, available, consultation_types, created_at",
     )
     .order("name", { ascending: true });
 
@@ -115,7 +113,7 @@ export async function getProfessional(
   const { data, error } = await supabase
     .from("professionals")
     .select(
-      "id, name, role, specialization, verification_status, city, available, overview, consultation_types, created_at",
+      "id, name, role, specialization, verification_status, city, available, consultation_types, created_at",
     )
     .eq("id", professionalId)
     .maybeSingle();
@@ -172,11 +170,13 @@ export async function getStudentAppointment(
 }
 
 export async function bookAppointment(
+  professionalId: string,
   slotId: string,
   consultationType: ConsultationType,
 ): Promise<Appointment> {
   const { data, error } = await supabase.rpc("book_student_appointment", {
-    p_slot_id: slotId,
+    p_professional_id: professionalId,
+    p_professional_slot_id: slotId,
     p_consultation_type: consultationType,
   });
 

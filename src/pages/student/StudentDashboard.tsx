@@ -3,6 +3,7 @@ import {
   CalendarCheck,
   ClipboardCheck,
   HeartPulse,
+  Leaf,
   MessageCircle,
   ShieldAlert,
   Sparkles,
@@ -338,6 +339,18 @@ export default function StudentDashboard() {
             <h3>Clear your mind</h3>
 
             <p>Put a thought into words and give yourself some space.</p>
+
+            <ArrowRight className="arrow" size={18} />
+          </Link>
+
+          <Link className="feature-card" to="/student/relax-reset">
+            <span className="feature-icon">
+              <Leaf size={20} />
+            </span>
+
+            <h3>Need a little reset? 🌿</h3>
+
+            <p>Take a short break with a calming activity.</p>
 
             <ArrowRight className="arrow" size={18} />
           </Link>

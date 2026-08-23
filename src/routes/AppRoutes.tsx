@@ -9,6 +9,11 @@ import Chat from "../pages/student/Chat";
 import Recovery from "../pages/student/Recovery";
 import SOS from "../pages/student/SOS";
 import Profile from "../pages/student/Profile";
+import RelaxReset from "../pages/student/RelaxReset";
+import BreathingBubble from "../pages/student/BreathingBubble";
+import ZenGarden from "../pages/student/ZenGarden";
+import BubblePop from "../pages/student/BubblePop";
+import InfinityFlow from "../pages/student/InfinityFlow";
 import Login from "../pages/auth/Login";
 import Signup from "../pages/auth/Signup";
 import ProtectedRoute from "./ProtectedRoute";
@@ -33,6 +38,11 @@ export default function AppRoutes() {
             <Route path="recovery" element={<Recovery />} />
             <Route path="sos" element={<SOS />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="relax-reset" element={<RelaxReset />} />
+            <Route path="relax-reset/breathing" element={<BreathingBubble />} />
+            <Route path="relax-reset/zen-garden" element={<ZenGarden />} />
+            <Route path="relax-reset/bubble-pop" element={<BubblePop />} />
+            <Route path="relax-reset/infinity-flow" element={<InfinityFlow />} />
           </Route>
         </Route>
       </Routes>
