@@ -1,0 +1,15 @@
+{
+  "name": "MindSync",
+  "short_name": "MindSync",
+  "description": "Your wellbeing space",
+  "theme_color": "#174037",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/mindsync-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

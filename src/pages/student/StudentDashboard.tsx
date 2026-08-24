@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { supabase } from "../../supabaseClient";
 import { getStudentCheckIns, type CheckInRecord } from "../../services/checkInService";
+import WellnessMonitor from "../../components/wellness/WellnessMonitor";
 
 import avatar1 from "../../assets/avatars/avatar-1.svg";
 import avatar2 from "../../assets/avatars/avatar-2.svg";
@@ -295,6 +296,9 @@ export default function StudentDashboard() {
           <p className="stat-note">{monthCheckIns === 1 ? "Check-in recorded this month" : "Check-ins recorded this month"}</p>
         </div>
       </section>
+
+      {/* AI Wellness Monitor */}
+      <WellnessMonitor />
 
       {/* Today's plan */}
       <section style={{ marginTop: 34 }}>

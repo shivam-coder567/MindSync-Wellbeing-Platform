@@ -21,7 +21,12 @@ export default function Auth({ mode }: { mode: AuthMode }) {
   const isSignup = mode === "signup";
   const redirectPath = (location.state as LocationState | null)?.from?.pathname || "/student";
 
-  if (!loading && session) return <Navigate to="/student" replace />;
+  /* While auth session is still resolving, show the same loading screen
+     as the rest of the app so there is no flash of the login form
+     for users who are already signed in. */
+  if (loading) return <div className="auth-loading">Loading your wellbeing space…</div>;
+
+  if (session) return <Navigate to="/student" replace />;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

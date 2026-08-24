@@ -1,311 +1,310 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
-import InfinityBoard from "../../components/relax/InfinityBoard";
-import {
-  generatePuzzle,
-  rotateTile as applyRotation,
-  isSolved,
-  findHintTile,
-  type Puzzle,
-  type Difficulty,
-  DIFFICULTY_CONFIG,
-  getNextDifficulty,
-} from "../../components/relax/infinityPuzzle";
+import HexBoard from "../../components/relax/infinity/HexBoard";
+import LevelPicker from "../../components/relax/infinity/LevelPicker";
+import { LEVEL_DATA, scrambleLevel, isSolved } from "../../components/relax/infinity/hexLogic";
+import { rotateMask } from "../../components/relax/infinity/hexTypes";
+import { getThemeForLevel } from "../../components/relax/infinity/infinityThemes";
 
-const SESSION_KEY = "mindsync-infinity-flow";
+const SESSION_KEY = "mindsync-infinity-hex";
+const MAX_HISTORY = 100;
+const TOTAL_LEVELS = LEVEL_DATA.length;
 
-interface SessionState {
-  puzzle: Puzzle;
-  difficulty: Difficulty;
-  history: Puzzle[];
-  completed: boolean;
-  hintedTile: { row: number; col: number } | null;
+interface TileState {
+  hex: { q: number; r: number };
+  currentMask: number;
+  solvedMask: number;
+  rotation: number;
 }
 
-function saveSession(state: SessionState | null) {
-  try {
-    if (state) {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
-    } else {
-      sessionStorage.removeItem(SESSION_KEY);
-    }
-  } catch { /* ignore */ }
+interface HistoryEntry {
+  tiles: TileState[];
 }
 
-function loadSession(): SessionState | null {
+interface SessionData {
+  level: number;
+  tiles: TileState[];
+  completed: number[];
+  history: HistoryEntry[];
+  redoStack: HistoryEntry[];
+}
+
+function loadSession(): SessionData | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-const MAX_HISTORY = 100;
+function saveSession(data: SessionData) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch { /* ignore */ }
+}
+
+function createLevel(levelId: number): TileState[] {
+  const data = LEVEL_DATA[levelId - 1] || LEVEL_DATA[0];
+  return scrambleLevel(data.tiles, levelId).map((t) => ({
+    hex: { q: t.q, r: t.r },
+    currentMask: t.currentMask,
+    solvedMask: t.solvedMask,
+    rotation: t.rotation,
+  }));
+}
 
 export default function InfinityFlow() {
-  const [difficulty, setDifficulty] = useState<Difficulty>("quiet");
-  const [puzzle, setPuzzle] = useState<Puzzle>(() => generatePuzzle(4));
-  const [history, setHistory] = useState<Puzzle[]>([]);
-  const [completed, setCompleted] = useState(false);
-  const [hintedTile, setHintedTile] = useState<{ row: number; col: number } | null>(null);
-  const [pulseActive, setPulseActive] = useState(false);
-  const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [level, setLevel] = useState(1);
+  const [tiles, setTiles] = useState<TileState[]>(() => createLevel(1));
+  const [completed, setCompleted] = useState<number[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [solved, setSolved] = useState(false);
+  const [justSolved, setJustSolved] = useState(false);
+  const stateRef = useRef({ level, tiles, completed, history, redoStack });
 
-  // Try to restore session on mount
+  // Keep ref current
+  stateRef.current = { level, tiles, completed, history, redoStack };
+
+  // Restore session
   useEffect(() => {
     const saved = loadSession();
-    if (saved && !saved.completed) {
-      setPuzzle(saved.puzzle);
-      setDifficulty(saved.difficulty);
-      setHistory(saved.history);
+    if (saved) {
+      setLevel(saved.level);
+      setTiles(saved.tiles);
       setCompleted(saved.completed);
-      setHintedTile(saved.hintedTile);
-    }
-  }, []);
-
-  // Save session on changes
-  useEffect(() => {
-    saveSession({
-      puzzle,
-      difficulty,
-      history,
-      completed,
-      hintedTile,
-    });
-  }, [puzzle, difficulty, history, completed, hintedTile]);
-
-  // Cleanup hint timeout
-  useEffect(() => {
-    return () => {
-      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
-    };
-  }, []);
-
-  const handleRotate = useCallback(
-    (row: number, col: number) => {
-      if (completed) return;
-
-      // Clear hint
-      setHintedTile(null);
-
-      setPuzzle((prev) => {
-        const next = applyRotation(prev, row, col);
-
-        // Check if solved
-        if (isSolved(next)) {
-          setCompleted(true);
-          setPulseActive(true);
-          setTimeout(() => setPulseActive(false), 1500);
-          saveSession(null); // Clear session on completion
-        }
-
-        return next;
-      });
-
-      setHistory((prev) => {
-        const next = [...prev, puzzle];
-        if (next.length > MAX_HISTORY) next.shift();
-        return next;
-      });
-    },
-    [completed, puzzle]
-  );
-
-  const handleUndo = useCallback(() => {
-    if (history.length === 0 || completed) return;
-    const prev = history[history.length - 1];
-    setHistory((h) => h.slice(0, -1));
-    setPuzzle(prev);
-    setHintedTile(null);
-  }, [history, completed]);
-
-  const handleReset = useCallback(() => {
-    const fresh = generatePuzzle(DIFFICULTY_CONFIG[difficulty].size);
-    setPuzzle(fresh);
-    setHistory([]);
-    setCompleted(false);
-    setHintedTile(null);
-    setPulseActive(false);
-  }, [difficulty]);
-
-  const handleHint = useCallback(() => {
-    if (completed) return;
-    const hint = findHintTile(puzzle);
-    if (!hint) return;
-
-    setHintedTile(hint);
-
-    // Auto-rotate the hinted tile toward its solution after a short delay
-    setTimeout(() => {
-      setPuzzle((prev) => {
-        const tile = prev.tiles[hint.row][hint.col];
-        if (tile.connections === tile.solvedConnections) return prev;
-        const next = applyRotation(prev, hint.row, hint.col);
-        if (isSolved(next)) {
-          setCompleted(true);
-          setPulseActive(true);
-          setTimeout(() => setPulseActive(false), 1500);
-          saveSession(null);
-        }
-        return next;
-      });
-    }, 350);
-
-    // Clear hint highlight after animation
-    hintTimeoutRef.current = setTimeout(() => setHintedTile(null), 1200);
-  }, [puzzle, completed]);
-
-  const handleNext = useCallback(() => {
-    const nextDiff = getNextDifficulty(difficulty);
-    setDifficulty(nextDiff);
-    const fresh = generatePuzzle(DIFFICULTY_CONFIG[nextDiff].size);
-    setPuzzle(fresh);
-    setHistory([]);
-    setCompleted(false);
-    setHintedTile(null);
-    setPulseActive(false);
-  }, [difficulty]);
-
-  const config = DIFFICULTY_CONFIG[difficulty];
-
-  // Count connected tiles
-  const connectedCount = useMemo(() => {
-    let count = 0;
-    for (const row of puzzle.tiles) {
-      for (const tile of row) {
-        if (tile.connections === tile.solvedConnections) count++;
+      setHistory(saved.history);
+      setRedoStack(saved.redoStack);
+      if (isSolved(saved.tiles)) {
+        setSolved(true);
+        setJustSolved(true);
+        setTimeout(() => setJustSolved(false), 1500);
       }
     }
-    return count;
-  }, [puzzle]);
+  }, []);
 
-  const totalTiles = puzzle.size * puzzle.size;
+  // Save session
+  useEffect(() => {
+    saveSession({ level, tiles, completed, history, redoStack });
+  }, [level, tiles, completed, history, redoStack]);
+
+  const theme = useMemo(() => getThemeForLevel(level), [level]);
+
+  const pushHistory = useCallback(() => {
+    const entry: HistoryEntry = { tiles: stateRef.current.tiles.map((t) => ({ ...t })) };
+    setHistory((prev) => {
+      const next = [...prev, entry];
+      return next.length > MAX_HISTORY ? next.slice(-MAX_HISTORY) : next;
+    });
+    setRedoStack([]);
+  }, []);
+
+  const handleRotate = useCallback((q: number, r: number) => {
+    if (solved) return;
+
+    pushHistory();
+
+    setTiles((prev) => {
+      const next = prev.map((t) => {
+        if (t.hex.q !== q || t.hex.r !== r) return t;
+        const newRotation = (t.rotation + 1) % 6;
+        return {
+          ...t,
+          rotation: newRotation,
+          currentMask: rotateMask(t.solvedMask, newRotation),
+        };
+      });
+
+      if (isSolved(next)) {
+        setSolved(true);
+        setJustSolved(true);
+        setTimeout(() => setJustSolved(false), 2000);
+        setCompleted((prev) => {
+          const s = stateRef.current;
+          if (!prev.includes(s.level)) return [...prev, s.level];
+          return prev;
+        });
+      }
+
+      return next;
+    });
+  }, [solved, pushHistory]);
+
+  const handleUndo = useCallback(() => {
+    if (history.length === 0 || solved) return;
+    const entry = history[history.length - 1];
+    const currentEntry: HistoryEntry = { tiles: stateRef.current.tiles.map((t) => ({ ...t })) };
+    setHistory((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, currentEntry]);
+    setTiles(entry.tiles);
+    setSolved(false);
+  }, [history, solved]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0 || solved) return;
+    const entry = redoStack[redoStack.length - 1];
+    const currentEntry: HistoryEntry = { tiles: stateRef.current.tiles.map((t) => ({ ...t })) };
+    setRedoStack((prev) => prev.slice(0, -1));
+    setHistory((prev) => [...prev, currentEntry]);
+    setTiles(entry.tiles);
+    if (isSolved(entry.tiles)) {
+      setSolved(true);
+      setJustSolved(true);
+      setTimeout(() => setJustSolved(false), 2000);
+    }
+  }, [redoStack, solved]);
+
+  const handleReset = useCallback(() => {
+    pushHistory();
+    const fresh = createLevel(level);
+    setTiles(fresh);
+    setSolved(false);
+    setJustSolved(false);
+  }, [level, pushHistory]);
+
+  const handleNextLevel = useCallback(() => {
+    const next = Math.min(level + 1, TOTAL_LEVELS);
+    setLevel(next);
+    setTiles(createLevel(next));
+    setHistory([]);
+    setRedoStack([]);
+    setSolved(false);
+    setJustSolved(false);
+  }, [level]);
+
+  const handleSelectLevel = useCallback((lvl: number) => {
+    setLevel(lvl);
+    setTiles(createLevel(lvl));
+    setHistory([]);
+    setRedoStack([]);
+    setSolved(false);
+    setJustSolved(false);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+        e.preventDefault();
+        handleRedo();
+      }
+      if (e.key === "r" && !e.ctrlKey && !e.metaKey && !(e.target instanceof HTMLInputElement)) {
+        handleReset();
+      }
+      if (e.key === "Escape") {
+        setShowPicker(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo, handleRedo, handleReset]);
+
+  const levelName = level <= 5 ? "Easy" : level <= 10 ? "Relaxed" : level <= 20 ? "Flow" : level <= 30 ? "Focus" : "Deep Flow";
+  const canUndo = history.length > 0 && !solved;
+  const canRedo = redoStack.length > 0 && !solved;
 
   return (
-    <div className="inf-sanctuary">
-      {/* Atmospheric background */}
-      <div className="inf-atmosphere" aria-hidden="true">
-        <div className="inf-depth" />
-        <div className="inf-light inf-light-1" />
-        <div className="inf-light inf-light-2" />
-        <div className="inf-botanicals">
-          <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" style={{ width: "100%", height: "100%", position: "absolute", inset: 0, opacity: 0.04 }}>
-            <path d="M 0 700 Q 80 620 40 540 Q 10 480 60 400 Q 30 340 70 280" stroke="#8cbfa5" strokeWidth="1.5" fill="none" />
-            <path d="M 1200 650 Q 1120 580 1160 500 Q 1130 430 1170 360 Q 1140 300 1180 240" stroke="#8cbfa5" strokeWidth="1.5" fill="none" />
-            <path d="M 50 750 Q 90 700 70 650 Q 100 600 80 550" stroke="#7eb39e" strokeWidth="1" fill="none" />
-            <path d="M 1150 720 Q 1110 670 1130 620 Q 1100 570 1120 520" stroke="#7eb39e" strokeWidth="1" fill="none" />
+    <div
+      className="hex-sanctuary"
+      style={{
+        "--hex-bg": theme.bg,
+        "--hex-surface": theme.surface,
+        "--hex-line": theme.line,
+        "--hex-glow": theme.glow,
+        "--hex-text": theme.text,
+        "--hex-text-muted": theme.textMuted,
+        "--hex-accent": theme.accent,
+      } as React.CSSProperties}
+    >
+      {/* Top bar */}
+      <div className="hex-topbar">
+        <Link to="/student/relax-reset" className="hex-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" /><path d="m12 19-7-7 7-7" />
           </svg>
+          Relax &amp; Reset
+        </Link>
+
+        <div className="hex-level-info">
+          <button className="hex-level-btn-small" onClick={() => setShowPicker(true)}>
+            <span className="hex-level-label">Level</span>
+            <span className="hex-level-number">{String(level).padStart(2, "0")}</span>
+            <span className="hex-level-count">/ {TOTAL_LEVELS}</span>
+          </button>
+          <span className="hex-level-name">{levelName}</span>
         </div>
-        {/* Particles */}
-        <div className="inf-particles" aria-hidden="true">
-          {Array.from({ length: 10 }, (_, i) => (
-            <div
-              key={i}
-              className="inf-particle"
-              style={{
-                "--px": `${10 + (i * 17) % 80}%`,
-                "--py": `${8 + (i * 23) % 84}%`,
-                "--po": 0.12 + (i % 3) * 0.06,
-                "--pd": `${14 + (i % 5) * 3}s`,
-              } as React.CSSProperties}
-            />
-          ))}
-        </div>
+
+        <button className="hex-btn-small" onClick={handleReset} aria-label="Reset level">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
+          </svg>
+        </button>
       </div>
 
-      {/* Back button */}
-      <Link to="/student/relax-reset" className="inf-back">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5" /><path d="m12 19-7-7 7-7" />
-        </svg>
-        Back to Relax &amp; Reset
-      </Link>
-
-      {/* Centered stage */}
-      <div className="inf-stage">
-        {/* Header */}
-        <div className="inf-header">
-          <p className="inf-eyebrow">INFINITY FLOW</p>
-          <h1 className="inf-title">Find the connection.</h1>
-          <p className="inf-subtitle">
-            Rotate the pieces until everything flows together.
-          </p>
-        </div>
-
-        {/* Board */}
-        <div className={`inf-board-wrap ${pulseActive ? "inf-pulse" : ""}`}>
-          <InfinityBoard
-            puzzle={puzzle}
-            hintedTile={hintedTile}
-            onRotate={handleRotate}
-          />
-        </div>
-
-        {/* Progress */}
-        <div className="inf-progress">
-          <span className="inf-progress-text">
-            {completed
-              ? "Complete"
-              : `${connectedCount} / ${totalTiles} aligned`}
-          </span>
-          <span className="inf-difficulty-label">{config.label}</span>
-        </div>
-
-        {/* Controls */}
-        <div className="inf-controls">
-          <button
-            className="inf-btn"
-            onClick={handleUndo}
-            disabled={history.length === 0 || completed}
-            aria-label="Undo last rotation"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-            </svg>
-            Undo
-          </button>
-          <button
-            className="inf-btn"
-            onClick={handleReset}
-            aria-label="Reset puzzle"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" />
-            </svg>
-            Reset
-          </button>
-          <button
-            className="inf-btn"
-            onClick={handleHint}
-            disabled={completed}
-            aria-label="Get a hint"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
-            </svg>
-            Hint
-          </button>
-        </div>
+      {/* Board */}
+      <div className={`hex-board-area ${solved ? "hex-board-solved" : ""} ${justSolved ? "hex-board-just-solved" : ""}`}>
+        <HexBoard
+          tiles={tiles}
+          theme={theme}
+          onRotate={handleRotate}
+          solved={solved}
+        />
       </div>
 
       {/* Completion overlay */}
-      {completed && (
-        <div className="inf-completion-overlay">
-          <div className="inf-completion-content">
-            <p className="inf-completion-eyebrow">FLOW COMPLETE</p>
-            <h2 className="inf-completion-title">You found your way through.</h2>
-            <div className="inf-completion-actions">
-              <button className="inf-btn inf-btn-primary" onClick={handleNext}>
-                Next Flow
+      {solved && (
+        <div className="hex-completion" style={{ background: `${theme.bg}ee` }}>
+          <div className="hex-completion-content">
+            <p className="hex-completion-eyebrow" style={{ color: theme.accent }}>Loop complete</p>
+            <h2 className="hex-completion-title" style={{ color: theme.text }}>Beautifully connected.</h2>
+            <div className="hex-completion-actions">
+              {level < TOTAL_LEVELS && (
+                <button className="hex-btn hex-btn-primary" onClick={handleNextLevel}>
+                  Next level →
+                </button>
+              )}
+              <button className="hex-btn" onClick={handleReset}>
+                Replay
               </button>
-              <Link to="/student/relax-reset" className="inf-btn">
-                Back to Relax &amp; Reset
-              </Link>
+              <button className="hex-btn" onClick={() => setShowPicker(true)}>
+                Level map
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Bottom controls */}
+      <div className="hex-bottom">
+        <button className="hex-btn" onClick={handleUndo} disabled={!canUndo} aria-label="Undo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+          </svg>
+          Undo
+        </button>
+        <button className="hex-btn" onClick={handleRedo} disabled={!canRedo} aria-label="Redo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+          </svg>
+          Redo
+        </button>
+      </div>
+
+      {/* Level picker */}
+      {showPicker && (
+        <LevelPicker
+          currentLevel={level}
+          totalLevels={TOTAL_LEVELS}
+          completed={completed}
+          onSelect={handleSelectLevel}
+          onClose={() => setShowPicker(false)}
+        />
       )}
     </div>
   );

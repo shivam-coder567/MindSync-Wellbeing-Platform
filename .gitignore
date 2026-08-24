@@ -5,3 +5,11 @@
 node_modules/
 dist/
 .freebuff/
+.freebuffchat-response.json
+.freebuffpreview-...
+.freebuffserver-final.log
+.freebuffserver-out.log
+.freebuffserver-out2.log
+.freebuffserver.log
+.freebuffpreview-5aff17a3-ccf4-4fe2-bc83-9208b952d0ce.log
+.freebuffpreview-5aff17a3-ccf4-4fe2-bc83-9208b952d0ce.log.err

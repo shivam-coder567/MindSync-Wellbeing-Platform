@@ -9,6 +9,7 @@ import {
   UserRound,
   ClipboardCheck,
   ChartNoAxesCombined,
+  Activity,
   ChevronRight,
   LogOut,
 } from "lucide-react";
@@ -51,6 +52,11 @@ const navItems = [
     icon: MessageCircle,
   },
   {
+    label: "Wellness",
+    path: "/student/wellness",
+    icon: Activity,
+  },
+  {
     label: "Recovery",
     path: "/student/recovery",
     icon: ChartNoAxesCombined,
@@ -74,6 +80,7 @@ const titles: Record<string, string> = {
   "/student/professionals": "Professionals",
   "/student/chat": "Messages",
   "/student/recovery": "Recovery",
+  "/student/wellness": "AI Wellness Monitor",
   "/student/relax-reset": "Relax & Reset",
   "/student/relax-reset/breathing": "Breathing Bubble",
   "/student/relax-reset/zen-garden": "Zen Garden",

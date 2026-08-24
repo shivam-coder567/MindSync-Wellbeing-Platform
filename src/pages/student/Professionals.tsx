@@ -59,6 +59,14 @@ const STATUS_STYLES: Record<
   cancelled: { background: "#fef3f0", color: "#b05a45", label: "Cancelled" },
 };
 
+const PROFESSIONALS_UI_STATE_KEY = "mindsync-professionals-ui";
+
+type ProfessionalsUIState = {
+  expandedId: string | null;
+  selectedSlotId: string | null;
+  selectedConsultationType: ConsultationType;
+};
+
 // ── Helpers ──────────────────────────────────────────────
 
 function formatSlotDate(iso: string): string {
@@ -99,10 +107,50 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+function getSavedUIState(): ProfessionalsUIState {
+  const defaultState: ProfessionalsUIState = {
+    expandedId: null,
+    selectedSlotId: null,
+    selectedConsultationType: "chat",
+  };
+
+  try {
+    const saved = sessionStorage.getItem(PROFESSIONALS_UI_STATE_KEY);
+
+    if (!saved) {
+      return defaultState;
+    }
+
+    const parsed = JSON.parse(saved) as Partial<ProfessionalsUIState>;
+
+    return {
+      expandedId:
+        typeof parsed.expandedId === "string" ? parsed.expandedId : null,
+      selectedSlotId:
+        typeof parsed.selectedSlotId === "string"
+          ? parsed.selectedSlotId
+          : null,
+      selectedConsultationType:
+        parsed.selectedConsultationType === "chat" ||
+        parsed.selectedConsultationType === "audio" ||
+        parsed.selectedConsultationType === "video"
+          ? parsed.selectedConsultationType
+          : "chat",
+    };
+  } catch {
+    return defaultState;
+  }
+}
+
 // ── Component ────────────────────────────────────────────
 
 export default function Professionals() {
   const { profile } = useAuth();
+
+  // Read temporary UI state once when this component is created.
+  const [savedUIState] = useState<ProfessionalsUIState>(() =>
+    getSavedUIState(),
+  );
 
   // ── Directory state ────────────────────────────────────
 
@@ -122,16 +170,20 @@ export default function Professionals() {
 
   // ── Expanded professional state ────────────────────────
 
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(
+    savedUIState.expandedId,
+  );
   const [slots, setSlots] = useState<ProfessionalSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState("");
 
   // ── Booking state ──────────────────────────────────────
 
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(
+    savedUIState.selectedSlotId,
+  );
   const [selectedConsultationType, setSelectedConsultationType] =
-    useState<ConsultationType>("chat");
+    useState<ConsultationType>(savedUIState.selectedConsultationType);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -141,6 +193,22 @@ export default function Professionals() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  // ── Persist temporary Professionals UI state ────────────
+
+  useEffect(() => {
+    const state: ProfessionalsUIState = {
+      expandedId,
+      selectedSlotId,
+      selectedConsultationType,
+    };
+
+    try {
+      sessionStorage.setItem(PROFESSIONALS_UI_STATE_KEY, JSON.stringify(state));
+    } catch {
+      // sessionStorage may be unavailable in restricted browser contexts.
+    }
+  }, [expandedId, selectedSlotId, selectedConsultationType]);
 
   // ── Load professionals on mount ────────────────────────
 
@@ -173,6 +241,7 @@ export default function Professionals() {
     }
 
     void load();
+
     return () => {
       alive = false;
     };
@@ -193,15 +262,20 @@ export default function Professionals() {
 
       try {
         const data = await getStudentAppointments(profile!.id);
+
         if (alive) {
           setAppointments(
-            data.filter((a) => a.status === "upcoming" || a.status === "completed"),
+            data.filter(
+              (a) => a.status === "upcoming" || a.status === "completed",
+            ),
           );
         }
       } catch (err) {
         if (!alive) return;
-        // Silently ignore if appointments table doesn't exist
+
+        // Silently ignore if appointments table doesn't exist.
         if (err instanceof ProfessionalSupportUnavailableError) return;
+
         console.error("Failed to load appointments:", err);
       } finally {
         if (alive) setAppointmentsLoading(false);
@@ -209,6 +283,7 @@ export default function Professionals() {
     }
 
     void loadAppointments();
+
     return () => {
       alive = false;
     };
@@ -220,14 +295,24 @@ export default function Professionals() {
     setSlotsLoading(true);
     setSlotsError("");
     setSlots([]);
-    setSelectedSlotId(null);
-    setSelectedConsultationType("chat");
     setBookingError("");
     setBookingSuccess(false);
 
     try {
       const data = await getProfessionalSlots(professionalId);
+
       setSlots(data);
+
+      // Keep the user's selected slot if it is still available.
+      // If another person booked it while the student was away,
+      // remove the stale selection.
+      setSelectedSlotId((current) => {
+        if (!current) return null;
+
+        const stillAvailable = data.some((slot) => slot.id === current);
+
+        return stillAvailable ? current : null;
+      });
     } catch (err) {
       if (err instanceof ProfessionalSupportUnavailableError) {
         setSlotsError("Slots are not available yet.");
@@ -239,6 +324,42 @@ export default function Professionals() {
       setSlotsLoading(false);
     }
   }, []);
+
+  // ── Lightweight slot refresh ───────────────────────────
+
+  const refreshSlots = useCallback(async () => {
+    if (!expandedId) return;
+
+    setSlotsLoading(true);
+    setSlotsError("");
+
+    try {
+      const data = await getProfessionalSlots(expandedId);
+
+      setSlots(data);
+
+      // Preserve the selected slot if it still exists.
+      // Otherwise clear it because it is no longer available.
+      setSelectedSlotId((current) => {
+        if (!current) return null;
+
+        const stillAvailable = data.some((slot) => slot.id === current);
+
+        return stillAvailable ? current : null;
+      });
+    } catch (err) {
+      if (err instanceof ProfessionalSupportUnavailableError) {
+        setSlotsError("Slots are not available yet.");
+      } else {
+        console.error("Failed to refresh slots:", err);
+        setSlotsError("Could not refresh available times.");
+      }
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, [expandedId]);
+
+  // ── React to expanded professional ─────────────────────
 
   useEffect(() => {
     if (expandedId) {
@@ -273,13 +394,17 @@ export default function Professionals() {
 
     return professionals.filter((p) => {
       if (q) {
-        const haystack = `${p.name} ${p.specialization} ${p.overview || ""} ${p.role} ${p.city}`.toLowerCase();
+        const haystack =
+          `${p.name} ${p.specialization} ${p.overview || ""} ${p.role} ${p.city}`.toLowerCase();
+
         if (!haystack.includes(q)) return false;
       }
+
       if (roleFilter && p.role !== roleFilter) return false;
       if (cityFilter && p.city !== cityFilter) return false;
       if (availabilityFilter === "available" && !p.available) return false;
       if (availabilityFilter === "unavailable" && p.available) return false;
+
       return true;
     });
   }, [professionals, search, roleFilter, cityFilter, availabilityFilter]);
@@ -303,39 +428,71 @@ export default function Professionals() {
   // ── Book appointment ───────────────────────────────────
 
   async function handleBook() {
-    if (!selectedSlotId || bookingInProgress) return;
+    if (!selectedSlotId || !expandedId || bookingInProgress) return;
 
     setBookingInProgress(true);
     setBookingError("");
     setBookingSuccess(false);
 
     try {
-      await bookAppointment(expandedId!, selectedSlotId, selectedConsultationType);
+      await bookAppointment(
+        expandedId,
+        selectedSlotId,
+        selectedConsultationType,
+      );
 
       setBookingSuccess(true);
       setSelectedSlotId(null);
 
-      // Remove the booked slot from the local list
+      // Clear temporary UI state after successful booking.
+      try {
+        sessionStorage.removeItem(PROFESSIONALS_UI_STATE_KEY);
+      } catch {
+        // Ignore storage errors.
+      }
+
+      // Remove the booked slot from the local list.
       setSlots((current) => current.filter((s) => s.id !== selectedSlotId));
 
-      // Refresh upcoming appointments
+      // Refresh upcoming appointments.
       if (profile?.id) {
         try {
           const updated = await getStudentAppointments(profile.id);
+
           setAppointments(
             updated.filter(
               (a) => a.status === "upcoming" || a.status === "completed",
             ),
           );
         } catch {
-          // Non-critical — appointments will refresh on next page load
+          // Non-critical — appointments will refresh on next page load.
         }
       }
     } catch (err) {
       console.error("Booking failed:", err);
 
-      if (err instanceof Error) {
-        setBookingError(err.message);
+      try {
+        console.error("Booking error detail:", JSON.stringify(err, null, 2));
+      } catch {
+        // Non-serializable error.
+      }
+
+      const rawMsg =
+        (err as { message?: string })?.message ||
+        (err as { error?: { message?: string } })?.error?.message ||
+        (err instanceof Error ? err.message : "");
+
+      const isStaleSlotConflict =
+        /no longer available|already been booked|already booked/i.test(rawMsg);
+
+      if (isStaleSlotConflict) {
+        setBookingError(
+          "This slot was just booked. Please choose another available time.",
+        );
+
+        void refreshSlots();
+      } else if (rawMsg) {
+        setBookingError(rawMsg);
       } else {
         setBookingError("Booking failed. Please try again.");
       }
@@ -352,6 +509,7 @@ export default function Professionals() {
     const confirmed = window.confirm(
       "Are you sure you want to cancel this appointment?",
     );
+
     if (!confirmed) return;
 
     setCancellingId(appointmentId);
@@ -362,24 +520,43 @@ export default function Professionals() {
       setAppointments((current) =>
         current.map((a) =>
           a.id === appointmentId
-            ? { ...a, status: "cancelled" as const, cancelledAt: new Date().toISOString() }
+            ? {
+                ...a,
+                status: "cancelled" as const,
+                cancelledAt: new Date().toISOString(),
+              }
             : a,
         ),
       );
 
-      // Refresh slots if the cancelled appointment's professional is expanded
+      // Refresh slots if the cancelled appointment's professional is expanded.
       if (expandedId) {
         void loadSlots(expandedId);
       }
     } catch (err) {
       console.error("Cancellation failed:", err);
-      alert("Could not cancel the appointment. Please try again.");
+
+      try {
+        console.error(
+          "Cancellation error detail:",
+          JSON.stringify(err, null, 2),
+        );
+      } catch {
+        // Non-serializable error.
+      }
+
+      const cancelMsg =
+        (err as { message?: string })?.message ||
+        (err as { error?: { message?: string } })?.error?.message ||
+        "Could not cancel the appointment.";
+
+      alert(cancelMsg);
     } finally {
       setCancellingId(null);
     }
   }
 
-  // ── Upcoming appointments (not cancelled) ──────────────
+  // ── Upcoming appointments ──────────────────────────────
 
   const upcomingAppointments = useMemo(
     () => appointments.filter((a) => a.status === "upcoming"),
@@ -391,7 +568,9 @@ export default function Professionals() {
   return (
     <main className="page">
       <p className="eyebrow">Support that fits you</p>
+
       <h1>Meet people who can help.</h1>
+
       <p className="lead">
         Take your time finding someone whose experience and approach feel right
         for you. Reaching out is a brave first step.
@@ -412,12 +591,21 @@ export default function Professionals() {
             }}
           >
             <CalendarCheck size={18} color="#34775a" />
-            <h2 style={{ margin: 0, fontSize: 18 }}>Your upcoming appointments</h2>
+            <h2 style={{ margin: 0, fontSize: 18 }}>
+              Your upcoming appointments
+            </h2>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
             {upcomingAppointments.map((apt) => {
-              const statusStyle = STATUS_STYLES[apt.status] || STATUS_STYLES.upcoming;
+              const statusStyle =
+                STATUS_STYLES[apt.status] || STATUS_STYLES.upcoming;
 
               return (
                 <article
@@ -446,9 +634,15 @@ export default function Professionals() {
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={{ fontSize: 14, display: "block" }}>
+                    <strong
+                      style={{
+                        fontSize: 14,
+                        display: "block",
+                      }}
+                    >
                       {formatAppointmentDateTime(apt.scheduledAt)}
                     </strong>
+
                     <span
                       style={{
                         fontSize: 12,
@@ -457,9 +651,11 @@ export default function Professionals() {
                         marginTop: 2,
                       }}
                     >
-                      {CONSULTATION_LABELS[apt.consultationType] || apt.consultationType} consultation
+                      {CONSULTATION_LABELS[apt.consultationType] ||
+                        apt.consultationType}
                       {" · "}
-                      {formatSlotTime(apt.scheduledAt)} – {formatSlotTime(apt.endsAt)}
+                      {formatSlotTime(apt.scheduledAt)} –{" "}
+                      {formatSlotTime(apt.endsAt)}
                     </span>
                   </div>
 
@@ -511,7 +707,13 @@ export default function Professionals() {
             gap: 12,
           }}
         >
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
             <div
               style={{
                 flex: 1,
@@ -525,6 +727,7 @@ export default function Professionals() {
               }}
             >
               <Search size={17} color="#7a9489" />
+
               <input
                 type="text"
                 placeholder="Search by name, specialization, or keyword…"
@@ -540,6 +743,7 @@ export default function Professionals() {
                   color: "#20332f",
                 }}
               />
+
               {search && (
                 <button
                   type="button"
@@ -614,6 +818,7 @@ export default function Professionals() {
                 }}
               >
                 <option value="">All roles</option>
+
                 {roles.map((role) => (
                   <option key={role} value={role}>
                     {ROLE_LABELS[role] || role}
@@ -637,6 +842,7 @@ export default function Professionals() {
                   }}
                 >
                   <option value="">All locations</option>
+
                   {cities.map((city) => (
                     <option key={city} value={city}>
                       {city}
@@ -720,7 +926,11 @@ export default function Professionals() {
       {!loading && error && (
         <div
           className="surface"
-          style={{ marginTop: 30, padding: 30, textAlign: "center" }}
+          style={{
+            marginTop: 30,
+            padding: 30,
+            textAlign: "center",
+          }}
         >
           <div
             style={{
@@ -736,7 +946,16 @@ export default function Professionals() {
           >
             <ShieldOff size={20} />
           </div>
-          <p style={{ margin: 0, fontSize: 14, color: "#5a3a33" }}>{error}</p>
+
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              color: "#5a3a33",
+            }}
+          >
+            {error}
+          </p>
         </div>
       )}
 
@@ -747,7 +966,11 @@ export default function Professionals() {
       {!loading && !error && professionals.length === 0 && (
         <div
           className="surface"
-          style={{ marginTop: 30, padding: 40, textAlign: "center" }}
+          style={{
+            marginTop: 30,
+            padding: 40,
+            textAlign: "center",
+          }}
         >
           <div
             style={{
@@ -763,8 +986,24 @@ export default function Professionals() {
           >
             <Stethoscope size={20} />
           </div>
-          <h3 style={{ margin: "0 0 6px", fontSize: 17 }}>No professionals yet</h3>
-          <p style={{ margin: 0, fontSize: 13, color: "#71817a", lineHeight: 1.5 }}>
+
+          <h3
+            style={{
+              margin: "0 0 6px",
+              fontSize: 17,
+            }}
+          >
+            No professionals yet
+          </h3>
+
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              color: "#71817a",
+              lineHeight: 1.5,
+            }}
+          >
             The professional directory will appear here once verified
             professionals have been added.
           </p>
@@ -775,27 +1014,48 @@ export default function Professionals() {
           EMPTY STATE — FILTERS
       ════════════════════════════════════════════════════ */}
 
-      {!loading && !error && professionals.length > 0 && filtered.length === 0 && (
-        <div
-          className="surface"
-          style={{ marginTop: 30, padding: 34, textAlign: "center" }}
-        >
-          <Search size={22} color="#8c9a94" style={{ marginBottom: 10 }} />
-          <h3 style={{ margin: "0 0 6px", fontSize: 16 }}>
-            No professionals match your search
-          </h3>
-          <p style={{ margin: "0 0 14px", fontSize: 13, color: "#71817a" }}>
-            Try adjusting your filters or search term.
-          </p>
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={clearFilters}
+      {!loading &&
+        !error &&
+        professionals.length > 0 &&
+        filtered.length === 0 && (
+          <div
+            className="surface"
+            style={{
+              marginTop: 30,
+              padding: 34,
+              textAlign: "center",
+            }}
           >
-            Clear filters
-          </button>
-        </div>
-      )}
+            <Search size={22} color="#8c9a94" style={{ marginBottom: 10 }} />
+
+            <h3
+              style={{
+                margin: "0 0 6px",
+                fontSize: 16,
+              }}
+            >
+              No professionals match your search
+            </h3>
+
+            <p
+              style={{
+                margin: "0 0 14px",
+                fontSize: 13,
+                color: "#71817a",
+              }}
+            >
+              Try adjusting your filters or search term.
+            </p>
+
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={clearFilters}
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
 
       {/* ════════════════════════════════════════════════════
           PROFESSIONAL CARDS
@@ -811,7 +1071,8 @@ export default function Professionals() {
               color: "#71817a",
             }}
           >
-            {filtered.length} professional{filtered.length !== 1 ? "s" : ""}{" "}
+            {filtered.length} professional
+            {filtered.length !== 1 ? "s" : ""}{" "}
             {hasActiveFilters ? "match your filters" : "in the directory"}
           </p>
 
@@ -824,11 +1085,15 @@ export default function Professionals() {
                 <article
                   className="surface professional-card"
                   key={pro.id}
-                  style={{ transition: "box-shadow 0.2s ease" }}
+                  style={{
+                    transition: "box-shadow 0.2s ease",
+                  }}
                 >
-                  {/* ── Card header ───────────────────────── */}
+                  {/* ── Card header ─────────────────────── */}
+
                   <div className="professional-top">
                     <div className="pro-avatar">{initials}</div>
+
                     <span className="availability">
                       ●{" "}
                       {pro.available
@@ -837,9 +1102,24 @@ export default function Professionals() {
                     </span>
                   </div>
 
-                  {/* ── Name + role ───────────────────────── */}
-                  <h2 style={{ marginTop: 19, marginBottom: 4 }}>{pro.name}</h2>
-                  <p style={{ marginBottom: 0, color: "#39705e", fontWeight: 700 }}>
+                  {/* ── Name + role ─────────────────────── */}
+
+                  <h2
+                    style={{
+                      marginTop: 19,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {pro.name}
+                  </h2>
+
+                  <p
+                    style={{
+                      marginBottom: 0,
+                      color: "#39705e",
+                      fontWeight: 700,
+                    }}
+                  >
                     {ROLE_LABELS[pro.role] || pro.role}
                   </p>
 
@@ -847,30 +1127,42 @@ export default function Professionals() {
                     <p style={{ marginTop: 8 }}>{pro.overview}</p>
                   )}
 
-                  {/* ── Tags ──────────────────────────────── */}
+                  {/* ── Tags ────────────────────────────── */}
+
                   <div className="pro-meta">
                     <span className="tag">
                       <Stethoscope
                         size={12}
-                        style={{ verticalAlign: "middle", marginRight: 4 }}
+                        style={{
+                          verticalAlign: "middle",
+                          marginRight: 4,
+                        }}
                       />
                       {pro.specialization}
                     </span>
+
                     {pro.city && (
                       <span className="tag">
                         <MapPin
                           size={12}
-                          style={{ verticalAlign: "middle", marginRight: 4 }}
+                          style={{
+                            verticalAlign: "middle",
+                            marginRight: 4,
+                          }}
                         />
                         {pro.city}
                       </span>
                     )}
+
                     <span className="tag">
                       {pro.verificationStatus === "verified" ? (
                         <>
                           <ShieldCheck
                             size={12}
-                            style={{ verticalAlign: "middle", marginRight: 4 }}
+                            style={{
+                              verticalAlign: "middle",
+                              marginRight: 4,
+                            }}
                           />
                           Verified
                         </>
@@ -878,7 +1170,10 @@ export default function Professionals() {
                         <>
                           <ShieldOff
                             size={12}
-                            style={{ verticalAlign: "middle", marginRight: 4 }}
+                            style={{
+                              verticalAlign: "middle",
+                              marginRight: 4,
+                            }}
                           />
                           {pro.verificationStatus === "pending"
                             ? "Verification pending"
@@ -902,6 +1197,7 @@ export default function Professionals() {
                       }}
                     >
                       {/* ── Professional details ────────── */}
+
                       <div
                         style={{
                           padding: "14px 16px",
@@ -921,18 +1217,30 @@ export default function Professionals() {
                           }}
                         >
                           <div>
-                            <strong style={{ color: "#345a4c", fontSize: 12 }}>
+                            <strong
+                              style={{
+                                color: "#345a4c",
+                                fontSize: 12,
+                              }}
+                            >
                               Role
                             </strong>
+
                             <p style={{ margin: "2px 0 0" }}>
                               {ROLE_LABELS[pro.role] || pro.role}
                             </p>
                           </div>
 
                           <div>
-                            <strong style={{ color: "#345a4c", fontSize: 12 }}>
+                            <strong
+                              style={{
+                                color: "#345a4c",
+                                fontSize: 12,
+                              }}
+                            >
                               Specialization
                             </strong>
+
                             <p style={{ margin: "2px 0 0" }}>
                               {pro.specialization}
                             </p>
@@ -940,28 +1248,48 @@ export default function Professionals() {
 
                           {pro.city && (
                             <div>
-                              <strong style={{ color: "#345a4c", fontSize: 12 }}>
+                              <strong
+                                style={{
+                                  color: "#345a4c",
+                                  fontSize: 12,
+                                }}
+                              >
                                 Location
                               </strong>
+
                               <p style={{ margin: "2px 0 0" }}>{pro.city}</p>
                             </div>
                           )}
 
                           {pro.overview && (
                             <div>
-                              <strong style={{ color: "#345a4c", fontSize: 12 }}>
+                              <strong
+                                style={{
+                                  color: "#345a4c",
+                                  fontSize: 12,
+                                }}
+                              >
                                 About
                               </strong>
-                              <p style={{ margin: "2px 0 0" }}>{pro.overview}</p>
+
+                              <p style={{ margin: "2px 0 0" }}>
+                                {pro.overview}
+                              </p>
                             </div>
                           )}
 
                           {pro.consultationTypes &&
                             pro.consultationTypes.length > 0 && (
                               <div>
-                                <strong style={{ color: "#345a4c", fontSize: 12 }}>
+                                <strong
+                                  style={{
+                                    color: "#345a4c",
+                                    fontSize: 12,
+                                  }}
+                                >
                                   Consultation types
                                 </strong>
+
                                 <div
                                   style={{
                                     display: "flex",
@@ -991,7 +1319,8 @@ export default function Professionals() {
                         </div>
                       </div>
 
-                      {/* ── Slots loading ──────────────── */}
+                      {/* ── Slots loading ───────────────── */}
+
                       {slotsLoading && (
                         <div
                           style={{
@@ -1005,7 +1334,8 @@ export default function Professionals() {
                         </div>
                       )}
 
-                      {/* ── Slots error ────────────────── */}
+                      {/* ── Slots error ─────────────────── */}
+
                       {!slotsLoading && slotsError && (
                         <div
                           style={{
@@ -1021,7 +1351,8 @@ export default function Professionals() {
                         </div>
                       )}
 
-                      {/* ── No slots available ─────────── */}
+                      {/* ── No slots available ──────────── */}
+
                       {!slotsLoading &&
                         !slotsError &&
                         slots.length === 0 &&
@@ -1042,6 +1373,7 @@ export default function Professionals() {
                               color="#8c9a94"
                               style={{ marginBottom: 6 }}
                             />
+
                             <p style={{ margin: 0 }}>
                               No upcoming slots available for this professional
                               right now.
@@ -1049,7 +1381,8 @@ export default function Professionals() {
                           </div>
                         )}
 
-                      {/* ── Slot selection ─────────────── */}
+                      {/* ── Slot selection ───────────────── */}
+
                       {!slotsLoading && !slotsError && slots.length > 0 && (
                         <div>
                           <strong
@@ -1103,13 +1436,21 @@ export default function Professionals() {
                                   }}
                                 >
                                   <span>
-                                    <strong>{formatSlotDate(slot.startsAt)}</strong>
-                                    <span style={{ color: "#71817a", margin: "0 6px" }}>
+                                    <strong>
+                                      {formatSlotDate(slot.startsAt)}
+                                    </strong>
+                                    <span
+                                      style={{
+                                        color: "#71817a",
+                                        margin: "0 6px",
+                                      }}
+                                    >
                                       ·
                                     </span>
                                     {formatSlotTime(slot.startsAt)} –{" "}
                                     {formatSlotTime(slot.endsAt)}
                                   </span>
+
                                   {isSelected && (
                                     <Check size={16} color="#3a7d5a" />
                                   )}
@@ -1120,7 +1461,8 @@ export default function Professionals() {
                         </div>
                       )}
 
-                      {/* ── Consultation type picker ──── */}
+                      {/* ── Consultation type picker ───── */}
+
                       {!slotsLoading && selectedSlotId && (
                         <div>
                           <strong
@@ -1134,10 +1476,18 @@ export default function Professionals() {
                             Consultation type
                           </strong>
 
-                          <div style={{ display: "flex", gap: 8 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 8,
+                            }}
+                          >
                             {(pro.consultationTypes || ["chat"]).map((type) => {
-                              const Icon = CONSULTATION_ICONS[type] || MessageCircle;
-                              const isSelected = selectedConsultationType === type;
+                              const Icon =
+                                CONSULTATION_ICONS[type] || MessageCircle;
+
+                              const isSelected =
+                                selectedConsultationType === type;
 
                               return (
                                 <button
@@ -1167,6 +1517,7 @@ export default function Professionals() {
                                   }}
                                 >
                                   <Icon size={17} />
+
                                   {CONSULTATION_LABELS[type] || type}
                                 </button>
                               );
@@ -1175,7 +1526,8 @@ export default function Professionals() {
                         </div>
                       )}
 
-                      {/* ── Booking success ────────────── */}
+                      {/* ── Booking success ─────────────── */}
+
                       {bookingSuccess && (
                         <div
                           style={{
@@ -1191,6 +1543,7 @@ export default function Professionals() {
                           }}
                         >
                           <CheckCircle2 size={18} />
+
                           <span>
                             <strong>Appointment booked!</strong> Check your
                             upcoming appointments above.
@@ -1198,7 +1551,8 @@ export default function Professionals() {
                         </div>
                       )}
 
-                      {/* ── Booking error ──────────────── */}
+                      {/* ── Booking error ───────────────── */}
+
                       {bookingError && (
                         <div
                           style={{
@@ -1214,7 +1568,8 @@ export default function Professionals() {
                         </div>
                       )}
 
-                      {/* ── Book button ────────────────── */}
+                      {/* ── Book button ─────────────────── */}
+
                       {selectedSlotId && !bookingSuccess && (
                         <button
                           className="btn btn-primary"
@@ -1235,9 +1590,14 @@ export default function Professionals() {
                     </div>
                   )}
 
-                  {/* ── Actions ───────────────────────────── */}
+                  {/* ── Actions ────────────────────────── */}
+
                   <div
-                    style={{ display: "flex", gap: 10, marginTop: 20 }}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      marginTop: 20,
+                    }}
                   >
                     <button
                       className="btn btn-primary"
@@ -1246,11 +1606,13 @@ export default function Professionals() {
                     >
                       {isExpanded ? (
                         <>
-                          <ChevronUp size={15} /> Close details
+                          <ChevronUp size={15} />
+                          Close details
                         </>
                       ) : (
                         <>
-                          <Calendar size={15} /> View profile
+                          <Calendar size={15} />
+                          View profile
                         </>
                       )}
                     </button>
@@ -1264,7 +1626,9 @@ export default function Professionals() {
                           ? `Message ${pro.name}`
                           : `${pro.name} is currently unavailable`
                       }
-                      style={{ opacity: pro.available ? 1 : 0.45 }}
+                      style={{
+                        opacity: pro.available ? 1 : 0.45,
+                      }}
                     >
                       <MessageCircle size={16} />
                     </button>

@@ -56,12 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = async () => {
     if (!session?.user) return;
 
-    setLoading(true);
-
+    /* Refresh the profile data without setting the global loading flag.
+       Setting loading=true here would cause ProtectedRoute to unmount
+       the entire layout and show a loading screen, creating a flash. */
     try {
       await loadProfile(session.user.id);
-    } finally {
-      setLoading(false);
+    } catch {
+      /* profile error is already set inside loadProfile */
     }
   };
 
@@ -93,13 +94,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void initializeAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, nextSession) => {
+      async (event, nextSession) => {
         if (!alive) return;
 
+        /*
+         * Only show the full loading state and update React state for
+         * events that genuinely change who is signed in.
+         *
+         * TOKEN_REFRESHED fires periodically (and when the tab regains
+         * focus). Updating session/profile state on every token refresh
+         * causes the entire component tree to re-render, which feels
+         * like a full page reload to the user. Skip it entirely.
+         */
+        /*
+         * Determine whether this event genuinely changes who is signed in.
+         *
+         * KEY INSIGHT: Supabase fires SIGNED_IN not only when a user
+         * actually signs in, but also when the existing session is
+         * recovered on tab return (via _recoverAndRefresh). Firing
+         * setLoading(true) for a session recovery unmounts the entire
+         * layout tree, destroying all page/game/form state.
+         *
+         * Fix: compare the incoming user ID with the current one.
+         * If they match, it is a recovery — skip the loading state.
+         */
+        const currentUserId = session?.user?.id;
+        const incomingUserId = nextSession?.user?.id;
+        const userChanged = incomingUserId !== currentUserId;
+
+        const isStructuralChange =
+          event === "INITIAL_SESSION" ||
+          event === "SIGNED_OUT" ||
+          event === "USER_UPDATED" ||
+          (event === "SIGNED_IN" && userChanged);
+
+        if (!isStructuralChange) {
+          /* TOKEN_REFRESHED, session recovery (same user), etc. —
+             just update the session object silently. Do NOT set
+             loading=true or clear profile. */
+          setSession(nextSession);
+          return;
+        }
+
+        /*
+         * Genuine sign-in/sign-out/initial-session: show loading,
+         * clear profile, re-fetch. This is the only path that
+         * unmounts the layout via ProtectedRoute.
+         */
         setLoading(true);
-        setSession(nextSession);
         setProfile(null);
         setProfileError(null);
+
+        setSession(nextSession);
 
         if (nextSession?.user) {
           await loadProfile(nextSession.user.id);
