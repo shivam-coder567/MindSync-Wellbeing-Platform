@@ -580,100 +580,194 @@ export default function Professionals() {
           UPCOMING APPOINTMENTS
       ════════════════════════════════════════════════════ */}
 
-      {!loading && upcomingAppointments.length > 0 && (
+      {!loading && (
         <section style={{ marginTop: 28 }}>
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              justifyContent: "space-between",
+              gap: 12,
               marginBottom: 14,
             }}
           >
-            <CalendarCheck size={18} color="#34775a" />
-            <h2 style={{ margin: 0, fontSize: 18 }}>
-              Your upcoming appointments
-            </h2>
-          </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <CalendarCheck size={18} color="#34775a" />
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            {upcomingAppointments.map((apt) => {
-              const statusStyle =
-                STATUS_STYLES[apt.status] || STATUS_STYLES.upcoming;
-
-              return (
-                <article
-                  className="surface"
-                  key={apt.id}
+              <div>
+                <h2
                   style={{
-                    padding: "16px 20px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 16,
+                    margin: 0,
+                    fontSize: 18,
+                    color: "#203b34",
                   }}
                 >
-                  <div
+                  Upcoming appointments
+                </h2>
+
+                <p
+                  style={{
+                    margin: "3px 0 0",
+                    fontSize: 12,
+                    color: "#71817a",
+                  }}
+                >
+                  Your scheduled support sessions
+                </p>
+              </div>
+            </div>
+
+            {upcomingAppointments.length > 0 && (
+              <span
+                style={{
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  background: "#eaf4ec",
+                  color: "#34775a",
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                {upcomingAppointments.length} scheduled
+              </span>
+            )}
+          </div>
+
+          {upcomingAppointments.length === 0 ? (
+            <div
+              className="surface"
+              style={{
+                padding: "22px 24px",
+                borderRadius: 16,
+                background: "linear-gradient(135deg, #f4faf6 0%, #eef7f1 100%)",
+                border: "1px solid #dcebe1",
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  minWidth: 44,
+                  borderRadius: 14,
+                  background: "#dcefe2",
+                  color: "#34775a",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <CalendarClock size={20} />
+              </div>
+
+              <div>
+                <strong
+                  style={{
+                    display: "block",
+                    fontSize: 14,
+                    color: "#29493f",
+                    marginBottom: 3,
+                  }}
+                >
+                  No upcoming appointments
+                </strong>
+
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: "#71817a",
+                  }}
+                >
+                  Choose a professional below to see their available times.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              {upcomingAppointments.map((apt) => {
+                const statusStyle =
+                  STATUS_STYLES[apt.status] || STATUS_STYLES.upcoming;
+
+                return (
+                  <article
+                    className="surface"
+                    key={apt.id}
                     style={{
-                      width: 42,
-                      height: 42,
-                      minWidth: 42,
-                      borderRadius: 12,
-                      background: "#eef5f0",
-                      color: "#34775a",
-                      display: "grid",
-                      placeItems: "center",
+                      padding: "16px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 16,
+                      borderRadius: 16,
                     }}
                   >
-                    <Calendar size={18} />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong
+                    <div
                       style={{
-                        fontSize: 14,
-                        display: "block",
+                        width: 42,
+                        height: 42,
+                        minWidth: 42,
+                        borderRadius: 12,
+                        background: "#eef5f0",
+                        color: "#34775a",
+                        display: "grid",
+                        placeItems: "center",
                       }}
                     >
-                      {formatAppointmentDateTime(apt.scheduledAt)}
-                    </strong>
+                      <Calendar size={18} />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong
+                        style={{
+                          fontSize: 14,
+                          display: "block",
+                          color: "#203b34",
+                        }}
+                      >
+                        {formatAppointmentDateTime(apt.scheduledAt)}
+                      </strong>
+
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "#71817a",
+                          display: "block",
+                          marginTop: 3,
+                        }}
+                      >
+                        {CONSULTATION_LABELS[apt.consultationType] ||
+                          apt.consultationType}
+                        {" · "}
+                        {formatSlotTime(apt.scheduledAt)} –{" "}
+                        {formatSlotTime(apt.endsAt)}
+                      </span>
+                    </div>
 
                     <span
                       style={{
-                        fontSize: 12,
-                        color: "#71817a",
-                        display: "block",
-                        marginTop: 2,
+                        padding: "4px 10px",
+                        borderRadius: 6,
+                        background: statusStyle.background,
+                        color: statusStyle.color,
+                        fontSize: 11,
+                        fontWeight: 700,
                       }}
                     >
-                      {CONSULTATION_LABELS[apt.consultationType] ||
-                        apt.consultationType}
-                      {" · "}
-                      {formatSlotTime(apt.scheduledAt)} –{" "}
-                      {formatSlotTime(apt.endsAt)}
+                      {statusStyle.label}
                     </span>
-                  </div>
 
-                  <span
-                    style={{
-                      padding: "4px 10px",
-                      borderRadius: 6,
-                      background: statusStyle.background,
-                      color: statusStyle.color,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {statusStyle.label}
-                  </span>
-
-                  {apt.status === "upcoming" && (
                     <button
                       className="btn btn-outline"
                       disabled={cancellingId === apt.id}
@@ -681,16 +775,15 @@ export default function Professionals() {
                       style={{
                         fontSize: 12,
                         padding: "7px 12px",
-                        whiteSpace: "nowrap",
                       }}
                     >
                       {cancellingId === apt.id ? "Cancelling…" : "Cancel"}
                     </button>
-                  )}
-                </article>
-              );
-            })}
-          </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
 

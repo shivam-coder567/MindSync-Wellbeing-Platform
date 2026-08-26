@@ -1,77 +1,56 @@
-import { memo, useMemo } from "react";
-import type { ThemeColors } from "./hexTypes";
-import { hexToPixel } from "./hexLogic";
-import HexTile from "./HexTile";
-
-interface TileData {
-  hex: { q: number; r: number };
-  currentMask: number;
-  solvedMask: number;
-  rotation: number;
-}
-
-interface HexBoardProps {
-  tiles: TileData[];
+import type { InfinityPuzzle, ThemeColors } from "./hexTypes";
+import InfinityTile from "./InfinityTile";
+interface Props {
+  puzzle: InfinityPuzzle;
   theme: ThemeColors;
+  tileSize?: number;
+  selected?: { q: number; r: number } | null;
+  hint?: { q: number; r: number } | null;
   onRotate: (q: number, r: number) => void;
-  solved: boolean;
 }
-
-const HexBoard = memo(function HexBoard({ tiles, theme, onRotate, solved }: HexBoardProps) {
-  const tileSize = 36;
-
-  // Compute bounds and center
-  const bounds = useMemo(() => {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const t of tiles) {
-      const { x, y } = hexToPixel(t.hex, tileSize);
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y);
-    }
-    const pad = tileSize * 2;
-    return {
-      width: maxX - minX + pad * 2,
-      height: maxY - minY + pad * 2,
-      offsetX: -minX + pad,
-      offsetY: -minY + pad,
-    };
-  }, [tiles, tileSize]);
-
+export default function HexBoard({
+  puzzle,
+  theme,
+  tileSize = 58,
+  selected = null,
+  hint = null,
+  onRotate,
+}: Props) {
+  const pad = tileSize * 1.5,
+    pts = puzzle.tiles.map((t) => ({
+      x: tileSize * Math.sqrt(3) * (t.hex.q + t.hex.r / 2),
+      y: tileSize * 1.5 * t.hex.r,
+    })),
+    minX = Math.min(...pts.map((p) => p.x)) - pad,
+    maxX = Math.max(...pts.map((p) => p.x)) + pad,
+    minY = Math.min(...pts.map((p) => p.y)) - pad,
+    maxY = Math.max(...pts.map((p) => p.y)) + pad;
   return (
-    <svg
-      className="hex-board-svg"
-      viewBox={`0 0 ${bounds.width} ${bounds.height}`}
-      style={{ width: "100%", height: "100%" }}
-    >
-      <defs>
-        <filter id="hex-glow">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      <g transform={`translate(${bounds.offsetX}, ${bounds.offsetY})`}>
-        {tiles.map((t) => (
-          <HexTile
-            key={`${t.hex.q},${t.hex.r}`}
-            hex={t.hex}
-            currentMask={t.currentMask}
-            solvedMask={t.solvedMask}
-            rotation={t.rotation}
+    <div className="infinity-board-shell">
+      <svg
+        className="infinity-board"
+        viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`}
+      >
+        <ellipse
+          cx={(minX + maxX) / 2}
+          cy={(minY + maxY) / 2}
+          rx={(maxX - minX) * 0.38}
+          ry={(maxY - minY) * 0.38}
+          fill={theme.glow}
+          opacity=".045"
+        />
+        {puzzle.tiles.map((t) => (
+          <InfinityTile
+            key={`${t.hex.q}-${t.hex.r}`}
+            tile={t}
             theme={theme}
             tileSize={tileSize}
-            isSelected={false}
+            isSelected={selected?.q === t.hex.q && selected?.r === t.hex.r}
+            isHint={hint?.q === t.hex.q && hint?.r === t.hex.r}
             onRotate={onRotate}
           />
         ))}
-      </g>
-    </svg>
+      </svg>
+    </div>
   );
-});
-
-export default HexBoard;
+}

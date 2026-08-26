@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import HubBreathing from "../../components/relax/HubBreathing";
 import HubGarden from "../../components/relax/HubGarden";
 import HubBubbleFlow from "../../components/relax/HubBubbleFlow";
-import HubInfinityFlow from "../../components/relax/HubInfinityFlow";
-
+import HubInfinityFlow from "../../components/relax/infinity/HubInfinityFlow";
 const activities = [
   {
     title: "Breathing",
     subtitle: "Luminous Breath",
-    description: "A guided breathing rhythm with a living orb that expands and softens with your breath.",
+    description:
+      "A guided breathing rhythm with a living orb that expands and softens with your breath.",
     duration: "1 – 3 min",
     path: "/student/relax-reset/breathing",
     illustration: HubBreathing,
@@ -19,7 +19,8 @@ const activities = [
   {
     title: "Zen Garden",
     subtitle: "Quiet Garden",
-    description: "Create a peaceful garden scene with stones, plants, and flowers at your own pace.",
+    description:
+      "Create a peaceful garden scene with stones, plants, and flowers at your own pace.",
     duration: "No limit",
     path: "/student/relax-reset/zen-garden",
     illustration: HubGarden,
@@ -29,7 +30,8 @@ const activities = [
   {
     title: "Bubble Flow",
     subtitle: "Gentle Drift",
-    description: "Large translucent bubbles drift through a calm atmosphere. Tap to release them.",
+    description:
+      "Large translucent bubbles drift through a calm atmosphere. Tap to release them.",
     duration: "1 min",
     path: "/student/relax-reset/bubble-pop",
     illustration: HubBubbleFlow,
@@ -39,7 +41,8 @@ const activities = [
   {
     title: "Infinity Flow",
     subtitle: "Quiet Geometry",
-    description: "Rotate geometric tiles to connect all paths into one flowing network.",
+    description:
+      "Rotate geometric tiles to connect all paths into one flowing network.",
     duration: "No limit",
     path: "/student/relax-reset/infinity-flow",
     illustration: HubInfinityFlow,
@@ -76,27 +79,55 @@ export default function RelaxReset() {
 
       {/* Illustrated activity cards */}
       <section className="rr-hub-grid">
-        {activities.map(({ title, subtitle, description, duration, path, illustration: Illustration, accent, glow }) => (
-          <Link key={path} to={path} className="rr-hub-card" style={{ "--card-accent": accent, "--card-glow": glow } as React.CSSProperties}>
-            {/* Illustrated scene */}
-            <div className="rr-hub-card-scene">
-              <div className="rr-hub-card-scene-glow" />
-              <Illustration />
-              <span className="rr-hub-card-duration" style={{ color: accent }}>{duration}</span>
-            </div>
+        {activities.map(
+          ({
+            title,
+            subtitle,
+            description,
+            duration,
+            path,
+            illustration: Illustration,
+            accent,
+            glow,
+          }) => (
+            <Link
+              key={path}
+              to={path}
+              className="rr-hub-card"
+              style={
+                {
+                  "--card-accent": accent,
+                  "--card-glow": glow,
+                } as React.CSSProperties
+              }
+            >
+              {/* Illustrated scene */}
+              <div className="rr-hub-card-scene">
+                <div className="rr-hub-card-scene-glow" />
+                <Illustration />
+                <span
+                  className="rr-hub-card-duration"
+                  style={{ color: accent }}
+                >
+                  {duration}
+                </span>
+              </div>
 
-            {/* Content */}
-            <div className="rr-hub-card-content">
-              <p className="rr-hub-card-subtitle" style={{ color: accent }}>{subtitle}</p>
-              <h2 className="rr-hub-card-title">{title}</h2>
-              <p className="rr-hub-card-desc">{description}</p>
-              <span className="rr-hub-card-action" style={{ color: accent }}>
-                Enter
-                <Waves size={14} style={{ transform: "rotate(-45deg)" }} />
-              </span>
-            </div>
-          </Link>
-        ))}
+              {/* Content */}
+              <div className="rr-hub-card-content">
+                <p className="rr-hub-card-subtitle" style={{ color: accent }}>
+                  {subtitle}
+                </p>
+                <h2 className="rr-hub-card-title">{title}</h2>
+                <p className="rr-hub-card-desc">{description}</p>
+                <span className="rr-hub-card-action" style={{ color: accent }}>
+                  Enter
+                  <Waves size={14} style={{ transform: "rotate(-45deg)" }} />
+                </span>
+              </div>
+            </Link>
+          ),
+        )}
       </section>
 
       {/* Safety footer */}

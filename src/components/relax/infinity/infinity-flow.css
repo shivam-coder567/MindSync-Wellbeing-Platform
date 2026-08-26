@@ -1,0 +1,334 @@
+.infinity-flow {
+  --if-muted: #a7c4af;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+  isolation: isolate;
+}
+.infinity-flow__ambient {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+  background: var(--infinity-glow);
+  opacity: 0.12;
+}
+.infinity-flow__ambient.a {
+  width: 420px;
+  height: 420px;
+  top: -150px;
+  left: 8%;
+}
+.infinity-flow__ambient.b {
+  width: 480px;
+  height: 480px;
+  right: -180px;
+  bottom: -200px;
+}
+.infinity-flow__game {
+  width: min(1180px, calc(100% - 32px));
+  min-height: calc(100vh - 32px);
+  margin: 16px auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  background: rgba(4, 16, 15, 0.38);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  position: relative;
+}
+.infinity-flow__header {
+  min-height: 92px;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.infinity-flow__eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--if-muted);
+}
+.infinity-flow__header h1 {
+  margin: 5px 0 0;
+  font-size: 36px;
+  letter-spacing: -0.04em;
+}
+.infinity-flow__header p {
+  margin: 7px 0 0;
+  color: var(--if-muted);
+  font-size: 14px;
+}
+.infinity-flow__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.infinity-flow__stat,
+.infinity-flow__reset,
+.infinity-flow__hint {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.055);
+  color: inherit;
+  border-radius: 14px;
+}
+.infinity-flow__stat {
+  min-width: 70px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.infinity-flow__stat strong {
+  font-size: 18px;
+}
+.infinity-flow__stat span {
+  font-size: 10px;
+  color: var(--if-muted);
+  text-transform: uppercase;
+}
+.infinity-flow__reset {
+  padding: 0 16px;
+  min-height: 46px;
+  cursor: pointer;
+}
+.infinity-flow__hint {
+  width: 50px;
+  height: 46px;
+  cursor: pointer;
+  position: relative;
+  font-size: 20px;
+}
+.infinity-flow__hint b {
+  position: absolute;
+  right: -5px;
+  top: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--infinity-glow);
+  color: #10231b;
+  font-size: 10px;
+}
+.infinity-flow__content {
+  padding: 28px;
+}
+.infinity-flow__title span {
+  font-size: 11px;
+  color: var(--if-muted);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+.infinity-flow__title h2 {
+  margin: 5px 0 15px;
+  font-size: 27px;
+}
+.infinity-levels {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.infinity-levels button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.045);
+  color: inherit;
+  border-radius: 12px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.infinity-levels button.is-active {
+  border-color: var(--infinity-glow);
+  background: rgba(255, 255, 255, 0.1);
+}
+.infinity-board-shell {
+  width: 100%;
+  min-height: 540px;
+  display: grid;
+  place-items: center;
+  border-radius: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.06),
+      transparent 45%
+    ),
+    rgba(0, 0, 0, 0.12);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -35px 70px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.infinity-board {
+  width: min(720px, 92%);
+  height: auto;
+  overflow: visible;
+}
+.infinity-tile {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.16s ease;
+}
+.infinity-tile:hover {
+  transform: scale(1.025);
+}
+.infinity-tile:active {
+  transform: scale(0.97);
+}
+.infinity-tile--hint {
+  animation: ifhint 1s ease-in-out infinite;
+}
+.infinity-hint-ring {
+  animation: ifring 1s ease-in-out infinite;
+}
+@keyframes ifhint {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.055);
+  }
+}
+@keyframes ifring {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.infinity-flow__instruction {
+  text-align: center;
+  margin-top: 14px;
+  color: var(--if-muted);
+  font-size: 12px;
+}
+.infinity-flow__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+}
+.infinity-flow__bottom > div:first-child > span {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--if-muted);
+  font-weight: 800;
+}
+.infinity-flow__themes {
+  display: flex;
+  gap: 8px;
+  margin-top: 7px;
+}
+.infinity-flow__themes button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.infinity-flow__themes button.is-active {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+.infinity-flow__breath {
+  color: var(--if-muted);
+  font-size: 13px;
+}
+.infinity-complete {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 15, 14, 0.65);
+  backdrop-filter: blur(12px);
+  z-index: 20;
+}
+.infinity-complete__card {
+  width: min(430px, 100%);
+  text-align: center;
+  padding: 38px 32px;
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(17, 42, 36, 0.92);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+.infinity-complete__spark {
+  font-size: 36px;
+  color: var(--infinity-glow);
+}
+.infinity-complete__card > span {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--if-muted);
+  font-weight: 800;
+}
+.infinity-complete__card h2 {
+  font-size: 27px;
+  margin: 10px 0;
+}
+.infinity-complete__card p {
+  color: var(--if-muted);
+  line-height: 1.6;
+}
+.infinity-complete__card button {
+  border: 0;
+  border-radius: 13px;
+  padding: 12px 18px;
+  background: var(--infinity-glow);
+  color: #10231b;
+  font-weight: 800;
+  cursor: pointer;
+}
+@media (max-width: 720px) {
+  .infinity-flow__game {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+  }
+  .infinity-flow__header {
+    padding: 18px;
+  }
+  .infinity-flow__header h1 {
+    font-size: 27px;
+  }
+  .infinity-flow__header p {
+    max-width: 210px;
+  }
+  .infinity-flow__content {
+    padding: 18px;
+  }
+  .infinity-board-shell {
+    min-height: 430px;
+  }
+  .infinity-board {
+    width: 108%;
+  }
+  .infinity-flow__bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .infinity-tile,
+  .infinity-tile--hint,
+  .infinity-hint-ring {
+    animation: none !important;
+    transition: none !important;
+  }
+}

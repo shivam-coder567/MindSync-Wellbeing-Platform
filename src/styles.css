@@ -695,31 +695,42 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .professional-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
-  margin-top: 30px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+  align-items: start;
 }
+
 .professional-card {
-  padding: 24px;
+  border-radius: 20px;
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid #dfeae3;
+  box-shadow: 0 8px 30px rgba(31, 73, 60, 0.06);
 }
+
 .professional-top {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
+
 .pro-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
   display: grid;
   place-items: center;
-  background: #dfeddf;
-  color: #32715c;
+  background: #e3f0e5;
+  color: #24604d;
   font-weight: 700;
+  font-size: 18px;
 }
+
 .availability {
-  color: #448760;
-  font-size: 12px;
+  color: #34775a;
+  font-size: 13px;
   font-weight: 700;
 }
 .professional-card p {
@@ -6371,5 +6382,2032 @@ input[type="range"]::-webkit-slider-thumb {
   .wm-metric-card:hover,
   .wm-insight:hover {
     transform: none;
+  }
+}
+/* =========================================================
+   AI COMPANION — SOFT PREMIUM UI POLISH
+   UI ONLY — NO FUNCTIONALITY CHANGES
+========================================================= */
+
+.chat-panel {
+  border-color: rgba(61, 116, 91, 0.12);
+  background:
+    radial-gradient(
+      circle at 92% 4%,
+      rgba(112, 174, 132, 0.08),
+      transparent 24%
+    ),
+    #ffffff;
+  box-shadow: 0 18px 45px rgba(35, 75, 60, 0.06);
+}
+
+.chat-header {
+  padding-bottom: 18px;
+}
+
+.online {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.online::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #62a276;
+  box-shadow: 0 0 0 4px rgba(98, 162, 118, 0.11);
+}
+
+.messages {
+  gap: 14px;
+  padding: 22px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #d7e5dc transparent;
+}
+
+.message {
+  position: relative;
+  max-width: 88%;
+  padding: 16px 19px;
+  border: 1px solid rgba(74, 135, 103, 0.08);
+  border-radius: 20px 20px 20px 7px;
+  background: linear-gradient(145deg, #f3f9f4, #edf6f0);
+  box-shadow:
+    0 5px 18px rgba(38, 83, 64, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.message:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 9px 24px rgba(38, 83, 64, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.message.mine {
+  border: 1px solid rgba(44, 107, 92, 0.18);
+  border-radius: 20px 20px 7px 20px;
+  background: linear-gradient(145deg, #347a68, #286b5b);
+  box-shadow:
+    0 7px 20px rgba(44, 107, 92, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.message-label {
+  margin-bottom: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.composer {
+  gap: 12px;
+  padding-top: 20px;
+}
+
+.composer input {
+  min-height: 46px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border-color: #d7e5dc;
+  background: #fbfdfb;
+  padding: 12px 16px;
+  box-shadow: inset 0 1px 2px rgba(30, 70, 52, 0.025);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.composer input:hover {
+  border-color: #b9d2c1;
+}
+
+.composer input:focus {
+  border-color: #76a98a;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(89, 146, 108, 0.09),
+    inset 0 1px 2px rgba(30, 70, 52, 0.02);
+}
+
+@media (max-width: 620px) {
+  .message {
+    max-width: 86%;
+  }
+
+  .messages {
+    padding: 22px 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message {
+    transition: none;
+  }
+}
+/* =========================================================
+   AI COMPANION — MARKDOWN RESPONSE
+   ========================================================= */
+
+.message-text {
+  line-height: 1.58;
+  font-size: 0.96rem;
+}
+
+.message-text p {
+  margin: 0 0 0.65rem;
+}
+
+.message-text p:last-child {
+  margin-bottom: 0;
+}
+
+.message-text strong {
+  font-weight: 700;
+}
+
+.message-text h1,
+.message-text h2,
+.message-text h3 {
+  margin: 0.85rem 0 0.4rem;
+  line-height: 1.3;
+}
+
+.message-text h1:first-child,
+.message-text h2:first-child,
+.message-text h3:first-child {
+  margin-top: 0;
+}
+
+.message-text ul,
+.message-text ol {
+  margin: 0.45rem 0 0.65rem;
+  padding-left: 1.35rem;
+}
+
+.message-text li {
+  margin: 0.2rem 0;
+  padding-left: 0.15rem;
+}
+
+.message-text li::marker {
+  font-weight: 600;
+}
+
+.message-text blockquote {
+  margin: 0.7rem 0;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid rgba(75, 142, 102, 0.45);
+  border-radius: 0 8px 8px 0;
+  background: rgba(75, 142, 102, 0.06);
+}
+
+.message-text code {
+  padding: 0.15rem 0.35rem;
+  border-radius: 5px;
+  font-size: 0.88em;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.message-text pre {
+  margin: 0.7rem 0;
+  padding: 0.85rem 0.95rem;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.message-text pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.message-text a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* =========================================================
+   PROFESSIONAL MESSAGES — MODERN CHAT
+   ========================================================= */
+
+.pro-chat-page .page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 0px);
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.pro-chat-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* ── Main chat panel ────────────────────────────────────── */
+
+.pro-chat-main {
+  --chat-text-scale: 1;
+  border-radius: 18px 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pro-chat-main .chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #edf0ee;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.chat-header-left h2 {
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-header-info {
+  min-width: 0;
+}
+
+.chat-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pro-chat-back-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #4a7a63;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pro-chat-back-btn:hover {
+  background: rgba(74, 122, 99, 0.08);
+}
+
+/* ── Text size controls ─────────────────────────────────── */
+
+.text-size-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #f5f8f6;
+  border: 1px solid #e1eae3;
+  border-radius: 10px;
+  padding: 3px 6px;
+}
+
+.text-size-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 28px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: #4a7a63;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.text-size-btn:hover:not(:disabled) {
+  background: rgba(74, 122, 99, 0.1);
+}
+
+.text-size-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.text-size-icon {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.text-size-icon-lg {
+  font-size: 14px;
+}
+
+.text-size-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: #65867a;
+  min-width: 30px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* ── Messages area ──────────────────────────────────────── */
+
+.pro-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #d7e5dc transparent;
+}
+
+.pro-messages .message {
+  max-width: 80%;
+  padding: calc(14px * var(--chat-text-scale, 1))
+    calc(18px * var(--chat-text-scale, 1));
+  font-size: calc(0.94rem * var(--chat-text-scale, 1));
+}
+
+.pro-messages .message.mine {
+  align-self: flex-end;
+}
+
+.pro-messages .message:not(.mine) {
+  align-self: flex-start;
+}
+
+.message-body {
+  display: block;
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ── Composer ───────────────────────────────────────────── */
+
+.pro-composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid #edf0ee;
+  flex-shrink: 0;
+  background: #fafcfb;
+}
+
+.pro-composer input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #d7e5dc;
+  border-radius: 22px;
+  padding: 11px 18px;
+  font-size: 14px;
+  background: #ffffff;
+  outline-color: #6eaa7e;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.pro-composer input:hover {
+  border-color: #b9d2c1;
+}
+
+.pro-composer input:focus {
+  border-color: #76a98a;
+  box-shadow: 0 0 0 3px rgba(89, 146, 108, 0.1);
+}
+
+.composer-attach {
+  border-radius: 50% !important;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.send-btn {
+  border-radius: 50% !important;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.send-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+/* ── Conversation note sidebar ──────────────────────────── */
+
+.pro-side-tip {
+  border-radius: 0 18px 18px 0;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.pro-side-tip h3 {
+  font-size: 15px;
+  margin-bottom: 0;
+}
+
+.pro-side-tip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pro-side-tip-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #4a7a63;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pro-side-tip-close:hover {
+  background: rgba(74, 122, 99, 0.08);
+}
+
+/* ── Responsive: Tablet ─────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .pro-chat-layout {
+    grid-template-columns: 1fr;
+    border-radius: 18px;
+  }
+
+  .pro-chat-main {
+    border-radius: 18px;
+  }
+
+  .pro-side-tip {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    border-radius: 0;
+    background: white;
+    padding: 24px 20px;
+  }
+
+  .pro-side-tip--mobile-open {
+    display: flex;
+  }
+
+  .pro-side-tip-close {
+    display: flex;
+  }
+}
+
+/* ── Responsive: Mobile ─────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .pro-chat-page .page {
+    padding-top: 20px;
+  }
+
+  .pro-chat-layout {
+    height: calc(100vh - 120px);
+    margin: 0 -20px;
+    border-radius: 0;
+  }
+
+  .pro-chat-main {
+    border-radius: 0;
+  }
+
+  .pro-chat-main .chat-header {
+    padding: 12px 14px;
+  }
+
+  .pro-chat-back-btn {
+    display: flex;
+  }
+
+  .pro-messages .message {
+    max-width: 88%;
+  }
+
+  .pro-composer {
+    padding: 10px 12px;
+  }
+
+  .pro-composer input {
+    min-height: 40px;
+    font-size: 16px;
+  }
+
+  .send-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .composer-attach {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pro-messages .message {
+    transition: none;
+  }
+}
+/*
+  MindSync — chat layout fixes
+  --------------------------------
+  Apply this file AFTER the existing global styles.css (or append its
+  contents to the end of the existing styles.css).
+
+  Changes:
+  - AI Companion uses the full content width instead of the global .page
+    max-width/padding constraint.
+  - AI Companion fills the available vertical space.
+  - Desktop sidebar close button is hidden; it only appears on mobile.
+  - AI Companion message bubbles use the available chat width more naturally.
+  - Markdown spacing is compact and readable.
+  - Professional Messages keeps its full-height chat layout and improves
+    responsive/text-size behavior.
+  - No functionality, routing, API, or data behavior is changed.
+*/
+
+/* =========================================================
+   GLOBAL CHAT-SAFE BOX SIZING
+========================================================= */
+
+.aic-page,
+.aic-page *,
+.pro-chat-page,
+.pro-chat-page * {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   AI COMPANION — FULL-WIDTH / FULL-HEIGHT
+========================================================= */
+
+/*
+ * The React page is <main class="page aic-page">.
+ * The global .page has generous desktop padding, so the AI chat was
+ * being constrained by that parent even though .aic-shell itself was
+ * width: 100%.
+ */
+.page.aic-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  height: calc(100vh - 90px);
+  min-height: 0;
+  margin: 0;
+  padding: 16px 20px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.aic-page .aic-shell {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* Keep the mobile close button from leaking into desktop. */
+.aic-page .aic-sidebar-close {
+  display: none;
+}
+
+/* Prevent accidental horizontal overflow from long AI output. */
+.aic-page .aic-chat,
+.aic-page .aic-messages,
+.aic-page .aic-msg-content,
+.aic-page .aic-markdown {
+  min-width: 0;
+}
+
+/* =========================================================
+   AI COMPANION — MESSAGE FLOW
+========================================================= */
+
+.aic-page .aic-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 22px 24px 18px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #d7e5dc transparent;
+}
+
+.aic-page .aic-msg-row {
+  width: 100%;
+  max-width: 100%;
+}
+
+.aic-page .aic-msg-content {
+  min-width: 0;
+  max-width: min(900px, 88%);
+}
+
+.aic-page .aic-msg-row-student {
+  justify-content: flex-end;
+}
+
+.aic-page .aic-msg-row-student .aic-msg-content {
+  max-width: min(760px, 82%);
+}
+
+.aic-page .aic-msg {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.aic-page .aic-msg-ai {
+  padding: 16px 18px;
+}
+
+.aic-page .aic-msg-student {
+  padding: 13px 16px;
+}
+
+/* =========================================================
+   AI COMPANION — MARKDOWN
+========================================================= */
+
+.aic-page .aic-markdown {
+  font-size: 14px;
+  line-height: 1.62;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.aic-page .aic-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.aic-page .aic-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.aic-page .aic-markdown p {
+  margin: 0 0 10px;
+}
+
+.aic-page .aic-markdown ul,
+.aic-page .aic-markdown ol {
+  margin: 7px 0 11px;
+  padding-left: 21px;
+}
+
+.aic-page .aic-markdown li {
+  margin: 4px 0;
+  padding-left: 2px;
+}
+
+.aic-page .aic-markdown h3,
+.aic-page .aic-markdown-heading {
+  margin: 15px 0 7px;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.aic-page .aic-markdown strong,
+.aic-page .aic-markdown-strong {
+  font-weight: 750;
+}
+
+.aic-page .aic-markdown blockquote,
+.aic-page .aic-markdown-quote {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 3px solid rgba(75, 142, 102, 0.42);
+  border-radius: 0 9px 9px 0;
+  background: rgba(75, 142, 102, 0.055);
+}
+
+.aic-page .aic-markdown code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  font-size: 0.9em;
+  background: rgba(0, 0, 0, 0.055);
+}
+
+.aic-page .aic-markdown pre {
+  max-width: 100%;
+  margin: 10px 0;
+  padding: 11px 13px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.055);
+}
+
+.aic-page .aic-markdown pre code {
+  padding: 0;
+  background: transparent;
+}
+
+/* =========================================================
+   AI COMPANION — COMPOSER
+========================================================= */
+
+.aic-page .aic-composer-wrap {
+  flex: 0 0 auto;
+  padding: 10px 18px 10px;
+}
+
+.aic-page .aic-composer {
+  gap: 10px;
+}
+
+.aic-page .aic-composer textarea {
+  min-height: 44px;
+  max-height: 120px;
+  resize: none;
+  overflow-y: auto;
+}
+
+/* =========================================================
+   AI COMPANION — DESKTOP / LARGE SCREENS
+========================================================= */
+
+@media (min-width: 1200px) {
+  .page.aic-page {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .aic-page .aic-messages {
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
+  .aic-page .aic-msg-content {
+    max-width: min(980px, 88%);
+  }
+}
+
+/* =========================================================
+   AI COMPANION — TABLET / MOBILE
+========================================================= */
+
+@media (max-width: 900px) {
+  .page.aic-page {
+    height: calc(100vh - 64px);
+    padding: 10px 12px 8px;
+  }
+
+  .aic-page .aic-sidebar-close {
+    display: flex;
+  }
+
+  .aic-page .aic-messages {
+    padding: 20px 14px 14px;
+  }
+
+  .aic-page .aic-msg-content,
+  .aic-page .aic-msg-row-student .aic-msg-content {
+    max-width: 92%;
+  }
+}
+
+@media (max-width: 640px) {
+  .page.aic-page {
+    height: calc(100vh - 64px);
+    padding: 0;
+  }
+
+  .aic-page .aic-shell {
+    border-radius: 0;
+    border: 0;
+  }
+
+  .aic-page .aic-messages {
+    padding: 18px 12px 12px;
+  }
+
+  .aic-page .aic-msg-content,
+  .aic-page .aic-msg-row-student .aic-msg-content {
+    max-width: 94%;
+  }
+
+  .aic-page .aic-msg {
+    border-radius: 17px;
+  }
+
+  .aic-page .aic-composer-wrap {
+    padding: 9px 10px 10px;
+  }
+}
+/* ============================================================
+   MindSync Infinity Flow
+   Game UI
+   ============================================================ */
+
+.infinity-flow {
+  width: 100%;
+  min-height: 680px;
+  box-sizing: border-box;
+  padding: 20px;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.9),
+      transparent 38%
+    ),
+    linear-gradient(135deg, #f2f7f1, #e6efe6);
+  color: #294b3d;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------
+   Header
+   ------------------------------------------------------------ */
+
+.infinity-flow__header {
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 20px;
+
+  padding: 16px 24px;
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(69, 105, 81, 0.12);
+  border-radius: 22px;
+
+  box-shadow: 0 10px 30px rgba(55, 87, 65, 0.08);
+}
+
+.infinity-flow__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.infinity-flow__brand-icon {
+  width: 50px;
+  height: 50px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 16px;
+
+  background: #527c61;
+  color: white;
+
+  font-size: 24px;
+
+  box-shadow: 0 8px 20px rgba(64, 106, 77, 0.18);
+}
+
+.infinity-flow__brand-title {
+  margin: 0;
+
+  font-size: clamp(20px, 2.5vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.infinity-flow__brand-subtitle {
+  margin-top: 3px;
+
+  font-size: 14px;
+  color: #6c8076;
+}
+
+/* ------------------------------------------------------------
+   Level
+   ------------------------------------------------------------ */
+
+.infinity-flow__level {
+  text-align: center;
+}
+
+.infinity-flow__level-badge {
+  display: inline-block;
+
+  padding: 8px 28px;
+
+  border-radius: 999px;
+
+  background: #e5efe2;
+  color: #315a42;
+
+  font-size: clamp(18px, 2vw, 25px);
+  font-weight: 800;
+}
+
+.infinity-flow__level-name {
+  margin-top: 7px;
+
+  font-size: 14px;
+  color: #60756a;
+}
+
+/* ------------------------------------------------------------
+   Header buttons
+   ------------------------------------------------------------ */
+
+.infinity-flow__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.infinity-flow__action {
+  position: relative;
+
+  width: 58px;
+  height: 58px;
+
+  border: 1px solid rgba(68, 98, 77, 0.13);
+  border-radius: 50%;
+
+  background: #fff;
+  color: #355a47;
+
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.infinity-flow__action:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 20px rgba(54, 89, 66, 0.13);
+}
+
+.infinity-flow__action:active {
+  transform: scale(0.95);
+}
+
+.infinity-flow__action-icon {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.infinity-flow__action-label {
+  margin-top: 3px;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.infinity-flow__hint-count {
+  position: absolute;
+
+  top: -4px;
+  right: -2px;
+
+  min-width: 21px;
+  height: 21px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #527c61;
+  color: white;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ------------------------------------------------------------
+   Main game area
+   ------------------------------------------------------------ */
+
+.infinity-flow__game {
+  position: relative;
+
+  min-height: 530px;
+
+  margin-top: 16px;
+
+  border-radius: 24px;
+
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(244, 249, 243, 0.92) 50%,
+    rgba(230, 240, 229, 0.88) 100%
+  );
+
+  border: 1px solid rgba(73, 108, 83, 0.1);
+
+  overflow: hidden;
+
+  box-shadow: inset 0 0 60px rgba(96, 132, 101, 0.07);
+}
+
+/* ------------------------------------------------------------
+   Decorative leaves
+   ------------------------------------------------------------ */
+
+.infinity-flow__leaf {
+  position: absolute;
+
+  width: 180px;
+  height: 260px;
+
+  opacity: 0.09;
+
+  pointer-events: none;
+
+  border-radius: 80% 20% 80% 20%;
+
+  background: #527c61;
+
+  filter: blur(0.2px);
+
+  transform: rotate(25deg);
+}
+
+.infinity-flow__leaf--left {
+  left: -70px;
+  bottom: -100px;
+}
+
+.infinity-flow__leaf--right {
+  right: -70px;
+  bottom: -100px;
+
+  transform: rotate(-25deg);
+}
+
+/* ------------------------------------------------------------
+   Stats
+   ------------------------------------------------------------ */
+
+.infinity-flow__moves {
+  position: absolute;
+
+  top: 24px;
+  left: 28px;
+
+  z-index: 5;
+}
+
+.infinity-flow__moves-label {
+  display: block;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #6a7d72;
+}
+
+.infinity-flow__moves-number {
+  display: inline-flex;
+
+  min-width: 72px;
+  justify-content: center;
+
+  margin-top: 6px;
+  padding: 8px 16px;
+
+  border-radius: 999px;
+
+  background: #61906f;
+  color: white;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* ------------------------------------------------------------
+   Theme badge
+   ------------------------------------------------------------ */
+
+.infinity-flow__theme {
+  position: absolute;
+
+  top: 24px;
+  right: 28px;
+
+  z-index: 5;
+
+  padding: 9px 15px;
+
+  border-radius: 999px;
+
+  background: rgba(224, 237, 222, 0.85);
+
+  color: #496b54;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------
+   Board
+   ------------------------------------------------------------ */
+
+.infinity-flow__board {
+  position: absolute;
+
+  inset: 70px 30px 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 2;
+}
+
+.infinity-flow__board svg {
+  width: min(72vw, 650px);
+  height: min(72vw, 500px);
+
+  max-width: 100%;
+  max-height: 100%;
+
+  overflow: visible;
+
+  filter: drop-shadow(0 14px 25px rgba(60, 92, 67, 0.09));
+}
+
+/* ------------------------------------------------------------
+   Hint
+   ------------------------------------------------------------ */
+
+.infinity-flow__hint-target {
+  animation: infinity-hint-pulse 1s ease-in-out infinite;
+}
+
+@keyframes infinity-hint-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(95, 148, 110, 0));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 14px rgba(91, 145, 105, 0.75));
+  }
+}
+
+/* ------------------------------------------------------------
+   Footer
+   ------------------------------------------------------------ */
+
+.infinity-flow__footer {
+  min-height: 88px;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+
+  align-items: center;
+  gap: 30px;
+
+  margin-top: 16px;
+  padding: 16px 24px;
+
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  border: 1px solid rgba(69, 105, 81, 0.12);
+  border-radius: 22px;
+
+  box-shadow: 0 8px 24px rgba(55, 87, 65, 0.07);
+}
+
+/* ------------------------------------------------------------
+   Levels
+   ------------------------------------------------------------ */
+
+.infinity-flow__levels {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.infinity-flow__levels-title {
+  margin-right: 6px;
+
+  font-size: 14px;
+  font-weight: 700;
+  color: #52695c;
+}
+
+.infinity-flow__level-button {
+  width: 40px;
+  height: 40px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #f1f0e9;
+  color: #66766d;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.18s ease;
+}
+
+.infinity-flow__level-button:hover {
+  transform: translateY(-1px);
+}
+
+.infinity-flow__level-button--active {
+  background: #61906f;
+  color: white;
+
+  box-shadow: 0 6px 15px rgba(73, 115, 83, 0.2);
+}
+
+/* ------------------------------------------------------------
+   Hint message
+   ------------------------------------------------------------ */
+
+.infinity-flow__hint-message {
+  justify-self: center;
+
+  min-width: 280px;
+
+  padding: 12px 20px;
+
+  border-radius: 16px;
+
+  background: #edf4e9;
+
+  color: #526b59;
+
+  font-size: 14px;
+}
+
+.infinity-flow__hint-message strong {
+  color: #355a42;
+}
+
+/* ------------------------------------------------------------
+   Legend
+   ------------------------------------------------------------ */
+
+.infinity-flow__legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  font-size: 13px;
+  color: #718077;
+}
+
+.infinity-flow__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.infinity-flow__legend-line {
+  width: 38px;
+  height: 7px;
+
+  border-radius: 999px;
+
+  background: #4d7c5d;
+}
+
+.infinity-flow__legend-line--off {
+  background: #dfe4df;
+}
+
+/* ------------------------------------------------------------
+   Completion
+   ------------------------------------------------------------ */
+
+.infinity-flow__complete {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(238, 247, 236, 0.78);
+
+  backdrop-filter: blur(5px);
+}
+
+.infinity-flow__complete-card {
+  width: min(420px, calc(100% - 40px));
+
+  padding: 32px;
+
+  text-align: center;
+
+  background: white;
+
+  border-radius: 24px;
+
+  box-shadow: 0 20px 60px rgba(53, 89, 63, 0.18);
+}
+
+.infinity-flow__complete-icon {
+  font-size: 45px;
+}
+
+.infinity-flow__complete-title {
+  margin: 10px 0 5px;
+
+  font-size: 27px;
+}
+
+.infinity-flow__complete-text {
+  color: #718077;
+  font-size: 14px;
+}
+
+.infinity-flow__next {
+  margin-top: 20px;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 12px 22px;
+
+  background: #527c61;
+  color: white;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------
+   Mobile
+   ------------------------------------------------------------ */
+
+@media (max-width: 850px) {
+  .infinity-flow {
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .infinity-flow__header {
+    grid-template-columns: 1fr auto;
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .infinity-flow__level {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .infinity-flow__brand-subtitle {
+    display: none;
+  }
+
+  .infinity-flow__actions {
+    gap: 6px;
+  }
+
+  .infinity-flow__action {
+    width: 48px;
+    height: 48px;
+  }
+
+  .infinity-flow__action-label {
+    display: none;
+  }
+
+  .infinity-flow__game {
+    min-height: 470px;
+  }
+
+  .infinity-flow__footer {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .infinity-flow__levels {
+    justify-content: center;
+  }
+
+  .infinity-flow__hint-message {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .infinity-flow__legend {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .infinity-flow__brand-title {
+    font-size: 20px;
+  }
+
+  .infinity-flow__brand-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .infinity-flow__game {
+    min-height: 400px;
+  }
+
+  .infinity-flow__moves {
+    top: 14px;
+    left: 14px;
+  }
+
+  .infinity-flow__theme {
+    top: 14px;
+    right: 14px;
+  }
+
+  .infinity-flow__board {
+    inset: 65px 8px 15px;
+  }
+
+  .infinity-flow__board svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .infinity-flow__legend {
+    display: none;
+  }
+}
+/* ============================================================
+   POLISHED HEX TILE EFFECTS
+   ============================================================ */
+
+.infinity-hex-background {
+  transition:
+    fill 180ms ease,
+    stroke 180ms ease,
+    stroke-width 180ms ease,
+    filter 180ms ease;
+}
+
+.hex-tile {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.hex-tile:hover {
+  transform: scale(1.035);
+}
+
+.hex-tile:active {
+  transform: scale(0.97);
+}
+
+.hex-tile:focus-visible {
+  outline: none;
+}
+
+.hex-tile:focus-visible .infinity-hex-background {
+  stroke-width: 3;
+}
+
+/* ------------------------------------------------------------
+   Selected tile
+   ------------------------------------------------------------ */
+
+.hex-tile--selected .infinity-hex-background {
+  filter: drop-shadow(0 0 8px rgba(82, 124, 97, 0.28));
+}
+
+.infinity-hex-selection {
+  animation: infinity-selection-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes infinity-selection-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* ------------------------------------------------------------
+   Active connection glow
+   ------------------------------------------------------------ */
+
+.infinity-flow__connection-glow {
+  animation: infinity-connection-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes infinity-connection-glow {
+  0%,
+  100% {
+    opacity: 0.14;
+  }
+
+  50% {
+    opacity: 0.32;
+  }
+}
+
+/* ------------------------------------------------------------
+   Solved tile
+   ------------------------------------------------------------ */
+
+.infinity-hex-solved-pulse {
+  animation: infinity-solved-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes infinity-solved-pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.05;
+  }
+
+  50% {
+    transform: scale(1.35);
+    opacity: 0.18;
+  }
+}
+
+/* ------------------------------------------------------------
+   Hint animation
+   ------------------------------------------------------------ */
+
+.hex-tile--hint {
+  animation: infinity-hint-tile 1s ease-in-out infinite;
+}
+
+@keyframes infinity-hint-tile {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(82, 124, 97, 0));
+  }
+
+  50% {
+    transform: scale(1.07);
+    filter: drop-shadow(0 0 16px rgba(82, 124, 97, 0.65));
+  }
+}
+
+/* ------------------------------------------------------------
+   Reduced motion
+   ------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .hex-tile,
+  .infinity-hex-selection,
+  .infinity-flow__connection-glow,
+  .infinity-hex-solved-pulse,
+  .hex-tile--hint {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.infinity-flow__game::before {
+  content: "";
+
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 420px;
+  height: 420px;
+
+  transform: translate(-50%, -50%);
+
+  border-radius: 50%;
+
+  background: radial-gradient(
+    circle,
+    rgba(112, 157, 121, 0.08),
+    transparent 68%
+  );
+
+  pointer-events: none;
+
+  animation: infinity-breathe 5s ease-in-out infinite;
+}
+
+@keyframes infinity-breathe {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.92);
+
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.08);
+
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infinity-flow__game::before {
+    animation: none;
+  }
+}
+.infinity-flow {
+  --if-muted: #a7c4af;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+  isolation: isolate;
+}
+.infinity-flow__ambient {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+  background: var(--infinity-glow);
+  opacity: 0.12;
+}
+.infinity-flow__ambient.a {
+  width: 420px;
+  height: 420px;
+  top: -150px;
+  left: 8%;
+}
+.infinity-flow__ambient.b {
+  width: 480px;
+  height: 480px;
+  right: -180px;
+  bottom: -200px;
+}
+.infinity-flow__game {
+  width: min(1180px, calc(100% - 32px));
+  min-height: calc(100vh - 32px);
+  margin: 16px auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  background: rgba(4, 16, 15, 0.38);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  position: relative;
+}
+.infinity-flow__header {
+  min-height: 92px;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.infinity-flow__eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--if-muted);
+}
+.infinity-flow__header h1 {
+  margin: 5px 0 0;
+  font-size: 36px;
+  letter-spacing: -0.04em;
+}
+.infinity-flow__header p {
+  margin: 7px 0 0;
+  color: var(--if-muted);
+  font-size: 14px;
+}
+.infinity-flow__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.infinity-flow__stat,
+.infinity-flow__reset,
+.infinity-flow__hint {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.055);
+  color: inherit;
+  border-radius: 14px;
+}
+.infinity-flow__stat {
+  min-width: 70px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.infinity-flow__stat strong {
+  font-size: 18px;
+}
+.infinity-flow__stat span {
+  font-size: 10px;
+  color: var(--if-muted);
+  text-transform: uppercase;
+}
+.infinity-flow__reset {
+  padding: 0 16px;
+  min-height: 46px;
+  cursor: pointer;
+}
+.infinity-flow__hint {
+  width: 50px;
+  height: 46px;
+  cursor: pointer;
+  position: relative;
+  font-size: 20px;
+}
+.infinity-flow__hint b {
+  position: absolute;
+  right: -5px;
+  top: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--infinity-glow);
+  color: #10231b;
+  font-size: 10px;
+}
+.infinity-flow__content {
+  padding: 28px;
+}
+.infinity-flow__title span {
+  font-size: 11px;
+  color: var(--if-muted);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+.infinity-flow__title h2 {
+  margin: 5px 0 15px;
+  font-size: 27px;
+}
+.infinity-levels {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.infinity-levels button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.045);
+  color: inherit;
+  border-radius: 12px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+.infinity-levels button.is-active {
+  border-color: var(--infinity-glow);
+  background: rgba(255, 255, 255, 0.1);
+}
+.infinity-board-shell {
+  width: 100%;
+  min-height: 540px;
+  display: grid;
+  place-items: center;
+  border-radius: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.06),
+      transparent 45%
+    ),
+    rgba(0, 0, 0, 0.12);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -35px 70px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.infinity-board {
+  width: min(720px, 92%);
+  height: auto;
+  overflow: visible;
+}
+.infinity-tile {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.16s ease;
+}
+.infinity-tile:hover {
+  transform: scale(1.025);
+}
+.infinity-tile:active {
+  transform: scale(0.97);
+}
+.infinity-tile--hint {
+  animation: ifhint 1s ease-in-out infinite;
+}
+.infinity-hint-ring {
+  animation: ifring 1s ease-in-out infinite;
+}
+@keyframes ifhint {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.055);
+  }
+}
+@keyframes ifring {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.infinity-flow__instruction {
+  text-align: center;
+  margin-top: 14px;
+  color: var(--if-muted);
+  font-size: 12px;
+}
+.infinity-flow__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+}
+.infinity-flow__bottom > div:first-child > span {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--if-muted);
+  font-weight: 800;
+}
+.infinity-flow__themes {
+  display: flex;
+  gap: 8px;
+  margin-top: 7px;
+}
+.infinity-flow__themes button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.infinity-flow__themes button.is-active {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+.infinity-flow__breath {
+  color: var(--if-muted);
+  font-size: 13px;
+}
+.infinity-complete {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 15, 14, 0.65);
+  backdrop-filter: blur(12px);
+  z-index: 20;
+}
+.infinity-complete__card {
+  width: min(430px, 100%);
+  text-align: center;
+  padding: 38px 32px;
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(17, 42, 36, 0.92);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+.infinity-complete__spark {
+  font-size: 36px;
+  color: var(--infinity-glow);
+}
+.infinity-complete__card > span {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--if-muted);
+  font-weight: 800;
+}
+.infinity-complete__card h2 {
+  font-size: 27px;
+  margin: 10px 0;
+}
+.infinity-complete__card p {
+  color: var(--if-muted);
+  line-height: 1.6;
+}
+.infinity-complete__card button {
+  border: 0;
+  border-radius: 13px;
+  padding: 12px 18px;
+  background: var(--infinity-glow);
+  color: #10231b;
+  font-weight: 800;
+  cursor: pointer;
+}
+@media (max-width: 720px) {
+  .infinity-flow__game {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+  }
+  .infinity-flow__header {
+    padding: 18px;
+  }
+  .infinity-flow__header h1 {
+    font-size: 27px;
+  }
+  .infinity-flow__header p {
+    max-width: 210px;
+  }
+  .infinity-flow__content {
+    padding: 18px;
+  }
+  .infinity-board-shell {
+    min-height: 430px;
+  }
+  .infinity-board {
+    width: 108%;
+  }
+  .infinity-flow__bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .infinity-tile,
+  .infinity-tile--hint,
+  .infinity-hint-ring {
+    animation: none !important;
+    transition: none !important;
   }
 }
