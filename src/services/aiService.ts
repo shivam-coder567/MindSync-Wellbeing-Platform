@@ -1,3 +1,4 @@
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 export type ChatMessage = {
   sender: "student" | "mindSync";
   text: string;
@@ -25,6 +26,28 @@ export type MindSyncContextPayload = {
 };
 
 /* ─────────────────────────────────────────────────────────────
+   API CONFIGURATION
+───────────────────────────────────────────────────────────── */
+
+/**
+ * The Express API URL comes from the Vite environment.
+ *
+ * Local:
+ * VITE_API_URL=http://localhost:3001
+ *
+ * Production:
+ * VITE_API_URL=https://your-api-domain.com
+ */
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "Missing VITE_API_URL environment configuration. " +
+      "Add VITE_API_URL to your frontend environment variables.",
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    AI CHAT
 ───────────────────────────────────────────────────────────── */
 
@@ -33,7 +56,7 @@ export async function getAIResponse(
   messages: ChatMessage[] = [],
   context?: MindSyncContextPayload,
 ): Promise<string> {
-  const response = await fetch("http://localhost:3001/api/chat", {
+  const response = await fetch(`${API_BASE_URL}/api/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -98,7 +121,7 @@ export type WellnessMetrics = {
 export async function getWellnessInsight(
   metrics: WellnessMetrics,
 ): Promise<string> {
-  const response = await fetch("http://localhost:3001/api/wellness-insight", {
+  const response = await fetch(`${API_BASE_URL}/api/wellness-insight`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

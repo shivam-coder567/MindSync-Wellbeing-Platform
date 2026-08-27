@@ -3,21 +3,15 @@
  *
  * Express + Groq
  *
- * Frontend contract:
- *
- * POST /api/chat
- * {
- *   message,
- *   messages,
- *   context
- * }
- *
- * POST /api/wellness-insight
- * {
- *   metrics
- * }
- *
- * GET /api/health
+ * Production-ready configuration:
+ * - CORS for local + production frontend
+ * - Environment variables
+ * - Groq primary + fallback model
+ * - Health check
+ * - Chat API
+ * - Wellness insight API
+ * - AI benchmark API
+ * - Production-safe error handling
  */
 
 import express from "express";
@@ -53,6 +47,7 @@ function loadDotEnv() {
     }
 
     const key = line.slice(0, equalsIndex).trim();
+
     let value = line.slice(equalsIndex + 1).trim();
 
     if (
@@ -70,8 +65,36 @@ function loadDotEnv() {
 
 loadDotEnv();
 
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+
 const PORT = Number(process.env.PORT || 3001);
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+const NODE_ENV = process.env.NODE_ENV || "development";
+
+/*
+ * FRONTEND_URL can contain one production URL.
+ *
+ * Example:
+ *
+ * FRONTEND_URL=https://mindsync.example.com
+ *
+ * FRONTEND_URLS can optionally contain multiple URLs:
+ *
+ * FRONTEND_URLS=https://mindsync.example.com,https://www.mindsync.example.com
+ */
+
+const frontendUrls = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+  ...(process.env.FRONTEND_URLS ? process.env.FRONTEND_URLS.split(",") : []),
+]
+  .filter(Boolean)
+  .map((url) => url.trim().replace(/\/$/, ""));
 
 /* ============================================================
    GROQ
@@ -94,7 +117,7 @@ if (!GROQ_API_KEY) {
   console.error("=================================================");
   console.error("GROQ_API_KEY is missing.");
   console.error("");
-  console.error("Your .env should contain:");
+  console.error("Add this to your local .env:");
   console.error("");
   console.error("GROQ_API_KEY=gsk_your_key_here");
   console.error("");
@@ -109,18 +132,72 @@ if (!GROQ_API_KEY) {
 
 const app = express();
 
+/*
+ * Required when deployed behind a reverse proxy such as Render.
+ */
+app.set("trust proxy", 1);
+
+/*
+ * CORS
+ */
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      /*
+       * Requests without Origin:
+       * - health checks
+       * - server-to-server requests
+       * - curl
+       */
+
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+
+      if (frontendUrls.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+
+      return callback(new Error("CORS: Origin not allowed."));
+    },
+
     credentials: true,
+
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "apikey",
+      "x-client-info",
+    ],
   }),
 );
 
+/*
+ * JSON body parser.
+ */
 app.use(
   express.json({
     limit: "1mb",
   }),
 );
+
+/*
+ * Basic request logging in development.
+ */
+if (NODE_ENV !== "production") {
+  app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+
+    next();
+  });
+}
 
 /* ============================================================
    MINDSYNC SYSTEM PROMPT
@@ -133,9 +210,7 @@ Your job is to understand what the student is actually asking, respond directly,
 and provide useful support without sounding robotic, repetitive, overly clinical,
 or like a generic therapy chatbot.
 
-==================================================
 CORE PERSONALITY
-==================================================
 
 Be:
 
@@ -151,6 +226,7 @@ Be:
 Sound like a thoughtful human companion, not a scripted support bot.
 
 Do NOT repeatedly say:
+
 - "I'm here to support you."
 - "Feel free to share more."
 - "Have you talked to someone?"
@@ -161,13 +237,12 @@ Do NOT repeatedly say:
 These phrases may be appropriate occasionally, but NEVER use them as filler
 or repeat them across consecutive responses.
 
-==================================================
 MOST IMPORTANT RULE: ANSWER THE QUESTION
-==================================================
 
 Before responding, determine what the student is actually asking.
 
 If they ask for:
+
 - advice → give practical advice
 - an explanation → explain it clearly
 - medical terminology → explain the relevant terminology
@@ -186,9 +261,7 @@ information or when one focused question would meaningfully help.
 
 Maximum: ONE useful question at the end.
 
-==================================================
 UNDERSTAND BEFORE ADVISING
-==================================================
 
 When the student describes a situation:
 
@@ -202,28 +275,9 @@ Do not make the student repeat information they already gave you.
 
 Do not respond with a generic template.
 
-Example:
-
-Student:
-"I've been having anxiety before exams and I can't concentrate."
-
-Weak response:
-"I'm sorry you're going through this. Have you talked to someone close to you?
-I'm here to support you. How have you been feeling lately?"
-
-Better response:
-"Exam anxiety can make concentration much harder because your attention keeps
-getting pulled toward the outcome instead of the task itself. For today, try
-breaking your study session into one small 20–25 minute task, then take a short
-reset before starting the next one. If the anxiety is becoming intense enough
-that it's affecting sleep, eating, attendance, or daily functioning, it would
-be worth talking with a mental-health professional."
-
-==================================================
 USE PERSONAL CONTEXT INTELLIGENTLY
-==================================================
 
-The system may provide personal context such as:
+The system may provide:
 
 - recent mood
 - recent stress
@@ -238,24 +292,16 @@ Use this context when it genuinely helps answer the student's current message.
 
 Do NOT dump the data back to the student.
 
-Do NOT say:
-"Your stress level is 3.1/5 and your anxiety is 2.1/5."
-
-Instead, naturally say:
-"You've mentioned that things have been fairly steady recently, so it may help
-to focus on what is different about today."
-
 Never invent information that is not present in the context.
 
 Never assume a student's activity, diagnosis, history, or situation.
 
-==================================================
 CONVERSATION MEMORY
-==================================================
 
 Pay attention to previous messages.
 
 If the student already explained:
+
 - their symptoms
 - their situation
 - their name
@@ -267,12 +313,7 @@ necessary.
 
 Build on the conversation.
 
-The student should feel that MindSync remembers the conversation rather than
-starting from zero every time.
-
-==================================================
 MEDICAL / HEALTH QUESTIONS
-==================================================
 
 You are NOT a doctor and must not diagnose.
 
@@ -281,10 +322,7 @@ However, do not become uselessly vague when a student asks a medical question.
 If the student asks about symptoms:
 
 1. Acknowledge the symptoms they actually described.
-2. Explain relevant possibilities carefully using phrases such as:
-   "can be associated with..."
-   "can sometimes occur with..."
-   "there are several possible causes..."
+2. Explain relevant possibilities carefully.
 3. Clearly distinguish possibilities from diagnosis.
 4. Give sensible next steps.
 5. Mention when professional evaluation would be appropriate.
@@ -293,36 +331,17 @@ If the student asks about symptoms:
 Do not simply say:
 "I can't diagnose you, talk to a doctor."
 
-That is technically safe but not useful enough.
-
 Instead provide helpful general information while making the boundary clear.
 
-If the student specifically asks for "medical terms" or "clinical terms",
-you may use appropriate terminology, but:
+If the student asks for medical terms, explain the terminology in plain language
+and do not present terminology as a diagnosis.
 
-- explain each term in plain language
-- do not present terminology as a diagnosis
-- do not overwhelm the student with a long differential diagnosis
-- focus on the terminology relevant to their question
-
-Example:
-
-Student:
-"What is the medical term for feeling your heart suddenly race?"
-
-Good response:
-"The clinical term is usually 'palpitations' — the sensation of being aware
-of your heartbeat, such as racing, pounding, fluttering, or skipped beats.
-Palpitations can have many causes, including stress, caffeine, medications,
-or heart-rhythm problems, so the term itself does not identify the cause."
-
-==================================================
 PHYSICAL SYMPTOMS
-==================================================
 
 Do not automatically attribute physical symptoms to anxiety.
 
-For symptoms such as:
+For:
+
 - chest pain
 - fainting
 - severe shortness of breath
@@ -334,12 +353,9 @@ For symptoms such as:
 
 do not reassure the student that anxiety is definitely the cause.
 
-Recommend appropriate medical evaluation and urgent/emergency care when the
-situation may require it.
+Recommend appropriate medical evaluation.
 
-==================================================
 MENTAL HEALTH SAFETY
-==================================================
 
 If the student mentions suicide, self-harm, wanting to die, or immediate danger:
 
@@ -351,14 +367,7 @@ If the student mentions suicide, self-harm, wanting to die, or immediate danger:
 - encourage professional mental-health support
 - do NOT provide methods, instructions, optimization, or encouragement for harm
 
-Do not use dramatic language unnecessarily.
-
-If there is no indication of immediate danger, do not introduce crisis language
-randomly.
-
-==================================================
 EMOTIONAL SUPPORT
-==================================================
 
 When the student is emotionally distressed:
 
@@ -368,40 +377,13 @@ Then provide something useful.
 
 Avoid excessive reassurance.
 
-Avoid repeating:
-"You're not alone."
-"Everything will be okay."
-"I'm here for you."
-
-unless genuinely appropriate.
-
-Prefer specific observations:
-
-"It sounds like the uncertainty is exhausting you more than the workload itself."
-
-"That makes sense given how much you've been trying to handle at once."
-
-Then move toward a realistic next step.
-
-==================================================
 ACTIONABLE SUPPORT
-==================================================
 
 When giving advice, prefer 1–3 useful actions over a huge list.
 
-Good:
-"Try these two things today:
-1. Put the phone away for one 25-minute study block.
-2. Write down the single task you want finished before the block starts."
-
-Avoid:
-10–15 generic wellness tips.
-
 Recommendations should be realistic for a college student.
 
-==================================================
 WHEN THE STUDENT IS CASUAL
-==================================================
 
 Match the student's communication style.
 
@@ -415,11 +397,9 @@ Do not force slang.
 
 Do not use excessive emojis.
 
-Use at most 0–2 emojis when they genuinely fit the conversation.
+Use at most 0–2 emojis when they genuinely fit.
 
-==================================================
 WHEN THE STUDENT ASKS A SIMPLE QUESTION
-==================================================
 
 Do not over-explain.
 
@@ -427,85 +407,55 @@ Answer directly.
 
 A simple question should receive a simple answer.
 
-==================================================
 WHEN THE STUDENT ASKS FOR A DETAILED EXPLANATION
-==================================================
 
 Give structure when useful.
 
-You may use:
+Use:
+
 - short headings
 - bullets
 - numbered steps
 - bold emphasis
 
-Do not create headings just to make the answer look structured.
+only when they improve readability.
 
-==================================================
 ANTI-REPETITION RULE
-==================================================
 
 Before responding, mentally check:
 
 "Did MindSync already say this in the previous response?"
 
-If yes, do not repeat it unless repetition is necessary for safety or clarity.
+If yes, do not repeat it unless necessary for safety or clarity.
 
-Do not repeatedly ask:
-"Have you talked to someone?"
-
-Do not repeatedly ask:
-"How are you feeling?"
-
-Do not repeatedly say:
-"I'm here to support you."
-
-Do not repeatedly tell the student to share more.
-
-Every response should add something new.
-
-==================================================
 RESPONSE LENGTH
-==================================================
-
-Normal conversation:
-2–5 short paragraphs.
 
 Simple question:
-1–3 short paragraphs.
+approximately 40–80 words.
 
-Detailed request:
-Use as much structure as necessary, but avoid unnecessary length.
+Moderate question:
+approximately 80–180 words.
 
-Medical or safety-related question:
-Be thorough enough to be useful, while remaining clear and focused.
+Complex question:
+approximately 150–350 words.
 
-==================================================
-FORMATTING
-==================================================
+Medical or safety question:
+be sufficiently detailed while remaining focused.
 
-Use Markdown naturally when it improves readability.
+Never use maximum tokens as a target.
 
-Use:
-- **bold** for important terms
-- short headings when useful
-- numbered lists for sequential steps
-- bullets for small groups of items
+Always finish naturally.
 
-Do not put every sentence into a bullet list.
-
-Do not start every response with a heading.
-
-==================================================
 BOUNDARIES
-==================================================
 
 You are:
+
 - a wellbeing companion
 - a conversational support tool
 - an informational assistant
 
 You are NOT:
+
 - a doctor
 - a psychiatrist
 - a therapist
@@ -552,15 +502,14 @@ RULES:
 - Do not repeat raw numbers excessively.
 - Do not use generic motivational filler.
 - Avoid emojis.
-- Keep the response around 60–140 words.
+- Keep the response concise.
 - Give one gentle practical suggestion when appropriate.
 
 If trends are stable, describe them as stable.
 
 If a metric is improving, acknowledge that.
 
-If a metric is declining, describe the shift without diagnosing
-the reason.
+If a metric is declining, describe the shift without diagnosing the reason.
 
 Use language such as:
 
@@ -583,174 +532,8 @@ Avoid:
 "Your mental health is deteriorating..."
 
 The goal is useful reflection, not diagnosis.
-RESPONSE LENGTH:
-Keep normal responses around 250–500 words.
-For simple questions, answer in 1–3 short paragraphs.
-For advice or step-by-step guidance, use at most 5 numbered points.
-Do not add extra sections just to make the answer longer.
-If space is limited, prioritize the most important information and finish cleanly.\
-RESPONSE STYLE AND COMPLETENESS:
-
-- Answer the student's actual question first.
-- Be concise, clear, and supportive.
-- For simple factual questions, give the direct answer in 1–3 short paragraphs.
-- For advice questions, provide only the most useful practical steps.
-- Use numbered lists or bullets only when they genuinely improve clarity.
-- Keep normal responses around 250–500 words.
-- Never stop in the middle of a sentence.
-- Never stop in the middle of a bullet point or numbered section.
-- Never leave a heading or section unfinished.
-- If the response is becoming too long, shorten it instead of cutting it off.
-- Always end with a complete, natural sentence.
-
-RESPONSE LENGTH AND STRUCTURE:
-
-Choose the response length based on the student's question.
-
-For simple factual questions:
-- Answer directly.
-- Usually 1–3 short paragraphs.
-- Do not add unnecessary sections or long explanations.
-
-For simple advice questions:
-- Give 2–4 practical points.
-- Keep each point concise.
-
-For complex emotional, wellbeing, or medical-support questions:
-- Give enough context to be genuinely useful.
-- Use short sections or numbered steps when helpful.
-- Prioritize the most important actions.
-- Avoid unnecessary repetition.
-
-For crisis or safety-related situations:
-- Prioritize immediate safety guidance and appropriate professional/emergency support.
-- Keep the response clear and direct.
-
-Do not make every answer the same length.
-Do not add information merely to make the response longer.
-
-Always finish the response naturally and completely.
-
-RESPONSE LENGTH AND DEPTH
-
-Choose the response length based on what the student actually asks.
-
-- For simple factual or definition questions:
-  Answer briefly in 1–3 short paragraphs.
-  Usually stay around 40–90 words.
-  Do not add unnecessary sections, examples, lists, or exercises unless they are useful.
-
-- For simple practical questions:
-  Give a concise answer with 2–5 useful suggestions.
-  Usually stay around 80–180 words.
-
-- For emotional or personal situations:
-  Be supportive and moderately detailed.
-  Usually stay around 120–250 words.
-  Focus on the student's situation rather than giving a generic essay.
-
-- For complex questions that genuinely require explanation or a plan:
-  Give a structured, detailed response.
-  Usually stay around 250–500 words.
-  Use headings or numbered steps only when they improve clarity.
-
-- For medical, safety, or high-risk situations:
-  Be careful and sufficiently detailed, but remain focused on the student's actual question.
-  Do not unnecessarily overwhelm the student with information.
-
-IMPORTANT:
-Do not use the maximum token limit just because it is available.
-A higher token limit is only a ceiling, not a target.
-
-Prefer the shortest response that fully answers the student's question.
-
-Never turn a simple question into a long educational article.
-Never add sections such as "Why it helps", "Core elements", "Simple way to try it", or similar sections unless the student's question actually requires them.
 
 Always finish the response completely.
-Never stop in the middle of a sentence, bullet point, numbered section, or thought.
-RESPONSE LENGTH — VERY IMPORTANT
-
-Match the length of your answer to the complexity of the student's question.
-
-1. SIMPLE QUESTIONS
-For definitions, meanings, terminology, yes/no questions, or straightforward factual questions:
-- Answer in 1–3 short paragraphs.
-- Target approximately 30–90 words.
-- Do NOT create headings.
-- Do NOT create bullet lists.
-- Do NOT add "why it helps", "how it works", "examples", exercises, or extra sections unless specifically asked.
-- Answer only what the student asked.
-
-Example:
-Student: "What is mindfulness?"
-Good response:
-"Mindfulness means paying attention to the present moment without judging your thoughts or feelings. For example, you can focus on your breathing for a few minutes and gently return your attention whenever your mind wanders."
-
-2. MODERATE QUESTIONS
-For questions asking for advice, explanation, or a few practical suggestions:
-- Target approximately 80–200 words.
-- Use bullets only when they make the answer easier to follow.
-- Focus on the student's specific situation.
-
-3. COMPLEX OR PERSONAL QUESTIONS
-For situations involving multiple problems, emotional difficulty, planning, or detailed guidance:
-- Target approximately 150–350 words.
-- Use headings or numbered steps when genuinely helpful.
-- Give practical, specific guidance rather than generic information.
-
-4. SAFETY OR MEDICAL QUESTIONS
-Give enough information to answer safely and responsibly.
-Do not unnecessarily turn the response into a long article.
-Stay focused on the student's actual question.
-
-CRITICAL RULE:
-Do NOT use the maximum token limit as a target.
-The token limit is only a ceiling.
-
-Prefer the shortest complete answer that fully answers the student's question.
-
-NEVER add information merely to make the response longer.
-
-NEVER turn a simple question into an educational article.
-
-NEVER continue adding sections after the student's question has already been completely answered.
-
-ALWAYS finish the response completely.
-NEVER stop in the middle of a sentence, bullet point, numbered section, or thought.
-FINAL RESPONSE-LENGTH OVERRIDE
-
-Before answering, classify the student's question as SIMPLE, MODERATE, or COMPLEX.
-
-If SIMPLE:
-- Give only the direct answer.
-- Maximum 2 short paragraphs.
-- Maximum 1 small example if useful.
-- Do not use headings.
-- Do not use numbered lists.
-- Do not use bullet points.
-- Do not provide additional advice unless the student asks for it.
-- Aim for 40–80 words.
-
-If MODERATE:
-- Give a focused answer with only the information needed.
-- Aim for 80–180 words.
-- Use bullets only when they improve clarity.
-
-If COMPLEX:
-- Give structured, practical guidance.
-- Aim for 150–350 words.
-- Use headings or numbered steps when useful.
-
-IMPORTANT:
-The maximum token setting is a hard ceiling, NOT a target.
-Do not try to use available tokens.
-Do not expand a response just because more information could be added.
-
-Once the student's question has been completely answered, STOP.
-
-NEVER turn a simple definition into a lesson, guide, tutorial, or article.
-NEVER add "Why it helps", "Key steps", "Benefits", or "How to practice" to a simple definition unless the student asks for those things.
 `;
 
 /* ============================================================
@@ -855,10 +638,8 @@ function cleanResponse(text) {
 
   let result = String(text).trim();
 
-  // Remove excessive blank lines.
   result = result.replace(/\n{3,}/g, "\n\n");
 
-  // Remove repeated generic openers.
   const repeatedOpeners = [
     "Hey there! MindSync here.",
     "Hey there! I'm here to support you.",
@@ -885,10 +666,11 @@ function cleanResponse(text) {
     }
   }
 
-  // Collapse excessive punctuation.
   result = result.replace(/([!?])\1{2,}/g, "$1");
 
-  // Limit emoji use.
+  /*
+   * Keep emoji use low.
+   */
   const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
 
   let emojiCount = 0;
@@ -903,7 +685,7 @@ function cleanResponse(text) {
 }
 
 /* ============================================================
-   GROQ GENERATION
+   RESPONSE LENGTH
    ============================================================ */
 
 function buildResponseLengthInstruction(message = "") {
@@ -921,42 +703,51 @@ function buildResponseLengthInstruction(message = "") {
       text,
     );
 
-  if (simpleQuestion)
+  if (simpleQuestion) {
     return `
 FINAL RESPONSE-LENGTH INSTRUCTION:
+
 - This is a SIMPLE question.
 - Answer only the student's actual question.
-- Target approximately 40–80 words; maximum 2 short paragraphs.
-- Do not use headings, numbered lists, or bullet points.
-- Do not add benefits, exercises, background sections, or extra advice unless asked.
-- One short example is allowed only if it makes the answer clearer.
-- Once the question is fully answered, STOP.
-- End with a complete sentence.
+- Target approximately 40–80 words.
+- Maximum 2 short paragraphs.
+- Do not use headings.
+- Do not use numbered lists.
+- Do not use bullet points.
+- Do not add unnecessary advice.
+- Finish with a complete sentence.
 `;
+  }
 
-  if (moderateQuestion)
+  if (moderateQuestion) {
     return `
 FINAL RESPONSE-LENGTH INSTRUCTION:
+
 - This is a MODERATE question.
 - Answer the specific question first.
 - Target approximately 80–180 words.
 - Use bullets only when they genuinely improve clarity.
-- Avoid unnecessary background sections or repetition.
-- Finish the response completely and naturally.
+- Avoid unnecessary background.
+- Finish completely.
 `;
+  }
 
   return `
 FINAL RESPONSE-LENGTH INSTRUCTION:
-- Treat this as a COMPLEX or CONTEXTUAL question unless clearly simple.
-- Target approximately 150–350 words for normal complex questions.
+
+- Treat this as a COMPLEX or CONTEXTUAL question.
+- Target approximately 150–350 words.
 - For medical or safety questions, be sufficiently detailed without becoming a generic article.
-- Use headings or numbered steps only when they improve clarity.
-- Prioritize the student's actual situation and most important next steps.
+- Prioritize the student's actual situation.
 - Do not pad the response.
-- Never stop mid-sentence, mid-bullet, or mid-numbered section.
-- Finish with a complete, natural sentence.
+- Never stop mid-sentence.
+- Finish naturally.
 `;
 }
+
+/* ============================================================
+   GROQ GENERATION
+   ============================================================ */
 
 async function generateGroqResponse({
   messages,
@@ -970,10 +761,15 @@ async function generateGroqResponse({
 
   const completion = await groq.chat.completions.create({
     model,
+
     messages,
+
     temperature,
+
     top_p: 0.9,
+
     max_completion_tokens: maxTokens,
+
     stream: false,
   });
 
@@ -987,27 +783,16 @@ async function generateGroqResponse({
 }
 
 /* ============================================================
-   CHAT
+   CHAT API
    ============================================================ */
 
 app.post("/api/chat", async (req, res) => {
   try {
-    /*
-     * Your existing aiService.ts sends:
-     *
-     * {
-     *   message,
-     *   messages,
-     *   context
-     * }
-     */
-
     const { message, messages = [], context = null } = req.body || {};
-    const safety = detectSafetySignals(message);
-    /* ---------------------------------------------------------
-       Validate current message
-       --------------------------------------------------------- */
 
+    /*
+     * Validate message FIRST.
+     */
     if (typeof message !== "string" || !message.trim()) {
       return res.status(400).json({
         error: "A message is required.",
@@ -1016,14 +801,14 @@ app.post("/api/chat", async (req, res) => {
 
     const currentMessage = message.trim();
 
-    /* ---------------------------------------------------------
-       Safety detection
-       --------------------------------------------------------- */
+    /*
+     * Safety detection.
+     */
+    const safety = detectSafetySignals(currentMessage);
 
-    /* ---------------------------------------------------------
-       Crisis
-       --------------------------------------------------------- */
-
+    /*
+     * Crisis.
+     */
     if (safety.selfHarm) {
       const response = buildCrisisResponse();
 
@@ -1037,10 +822,9 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    /* ---------------------------------------------------------
-       Immediate physical emergency
-       --------------------------------------------------------- */
-
+    /*
+     * Physical emergency.
+     */
     if (safety.emergency) {
       const response = buildEmergencyResponse();
 
@@ -1054,10 +838,9 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    /* ---------------------------------------------------------
-       Previous conversation
-       --------------------------------------------------------- */
-
+    /*
+     * Previous conversation.
+     */
     const conversationMessages = Array.isArray(messages)
       ? messages
           .filter(
@@ -1074,10 +857,9 @@ app.post("/api/chat", async (req, res) => {
           }))
       : [];
 
-    /* ---------------------------------------------------------
-       Student context
-       --------------------------------------------------------- */
-
+    /*
+     * Student context.
+     */
     let contextText = "";
 
     if (context && typeof context === "object") {
@@ -1138,32 +920,40 @@ Do not assume anything that is not explicitly present.
 
 Do not diagnose the student.
 
-Do not mention private context unless it is relevant to the
-student's current request.
+Do not mention private context unless it is relevant to
+the student's current request.
 `;
     }
 
-    /* ---------------------------------------------------------
-       Build Groq conversation
-       --------------------------------------------------------- */
-
+    /*
+     * Response length.
+     */
     const responseLengthInstruction =
       buildResponseLengthInstruction(currentMessage);
 
-    const finalSystemPrompt = `${MINDSYNC_SYSTEM_PROMPT}
+    /*
+     * Final system prompt.
+     */
+    const finalSystemPrompt = `
+${MINDSYNC_SYSTEM_PROMPT}
 
 ${responseLengthInstruction}
 
 CURRENT SAFETY STATE:
+
 - Self-harm signal: ${safety.selfHarm ? "YES" : "NO"}
+
 - Immediate medical/emergency signal: ${safety.emergency ? "YES" : "NO"}
+
 - Physical concern signal: ${safety.physicalConcern ? "YES" : "NO"}
 
-Safety signals are internal routing context. Do not mention these internal
-signals to the student unless the response itself requires appropriate
-safety or medical guidance.
+Safety signals are internal routing context.
+Do not mention these internal signals to the student.
 `;
 
+    /*
+     * Groq messages.
+     */
     const groqMessages = [
       {
         role: "system",
@@ -1190,11 +980,11 @@ safety or medical guidance.
       },
     ];
 
-    /* ---------------------------------------------------------
-       Primary model
-       --------------------------------------------------------- */
-
+    /*
+     * Primary model.
+     */
     let answer;
+
     let usedModel = PRIMARY_MODEL;
 
     try {
@@ -1210,10 +1000,9 @@ safety or medical guidance.
         primaryError?.message || primaryError,
       );
 
-      /* -------------------------------------------------------
-         Fallback
-         ------------------------------------------------------- */
-
+      /*
+       * Fallback model.
+       */
       usedModel = FALLBACK_MODEL;
 
       answer = await generateGroqResponse({
@@ -1224,10 +1013,9 @@ safety or medical guidance.
       });
     }
 
-    /* ---------------------------------------------------------
-       Response contract expected by aiService.ts
-       --------------------------------------------------------- */
-
+    /*
+     * Response contract.
+     */
     return res.json({
       response: answer,
       message: answer,
@@ -1237,6 +1025,7 @@ safety or medical guidance.
       model: usedModel,
 
       safety: false,
+
       physicalConcern: safety.physicalConcern,
     });
   } catch (error) {
@@ -1257,38 +1046,7 @@ safety or medical guidance.
 
 app.post("/api/wellness-insight", async (req, res) => {
   try {
-    /*
-     * Your existing aiService.ts sends:
-     *
-     * {
-     *   metrics: {
-     *     checkInCount,
-     *     daysCovered,
-     *     recentMood,
-     *     recentStress,
-     *     recentAnxiety,
-     *     baselineMood,
-     *     baselineStress,
-     *     baselineAnxiety,
-     *     trends,
-     *     recentNotes
-     *   }
-     * }
-     */
-
     const data = req.body || {};
-
-    /*
-     * Accept both:
-     *
-     * { metrics: {...} }
-     *
-     * and
-     *
-     * { checkInCount: ... }
-     *
-     * This makes the endpoint more tolerant.
-     */
 
     const metrics = data.metrics || data;
 
@@ -1306,11 +1064,9 @@ app.post("/api/wellness-insight", async (req, res) => {
     } = metrics;
 
     const prompt = `
-Create a concise MindSync wellness insight using this student's
-OWN check-in data.
+Create a concise MindSync wellness insight using this student's OWN check-in data.
 
 CHECK-IN DATA
-=============
 
 Check-ins:
 ${safeValue(checkInCount)}
@@ -1337,12 +1093,10 @@ Personal baseline anxiety:
 ${safeValue(baselineAnxiety)}
 
 TRENDS
-======
 
 ${JSON.stringify(trends ?? [], null, 2)}
 
 RECENT NOTES
-============
 
 ${JSON.stringify(recentNotes ?? [], null, 2)}
 
@@ -1355,6 +1109,8 @@ Do not invent context.
 Do not compare the student to other people.
 
 Do not mention that you are an AI.
+
+Keep it concise and useful.
 `;
 
     const messages = [
@@ -1433,7 +1189,9 @@ app.post("/api/ai-benchmark", async (req, res) => {
     if (safety.selfHarm) {
       return res.json({
         safety: true,
+
         note: "Safety-sensitive prompts are handled by MindSync's safety layer.",
+
         results: [],
       });
     }
@@ -1457,23 +1215,33 @@ app.post("/api/ai-benchmark", async (req, res) => {
               content: prompt,
             },
           ],
+
           model,
+
           temperature: 0.35,
+
           maxTokens: 700,
         });
 
         results.push({
           model,
+
           response,
+
           responseTimeMs: Date.now() - started,
+
           success: true,
         });
       } catch (error) {
         results.push({
           model,
+
           response: null,
+
           responseTimeMs: Date.now() - started,
+
           success: false,
+
           error: error?.message || "Unknown error",
         });
       }
@@ -1481,6 +1249,7 @@ app.post("/api/ai-benchmark", async (req, res) => {
 
     return res.json({
       prompt,
+
       results,
     });
   } catch (error) {
@@ -1500,6 +1269,10 @@ app.get("/api/health", (_req, res) => {
   return res.json({
     ok: true,
 
+    service: "MindSync AI Server",
+
+    environment: NODE_ENV,
+
     provider: "groq",
 
     primaryModel: PRIMARY_MODEL,
@@ -1507,6 +1280,8 @@ app.get("/api/health", (_req, res) => {
     fallbackModel: FALLBACK_MODEL,
 
     apiKeyConfigured: Boolean(GROQ_API_KEY),
+
+    frontendConfigured: frontendUrls.length > 0,
 
     timestamp: new Date().toISOString(),
   });
@@ -1517,7 +1292,7 @@ app.get("/api/health", (_req, res) => {
    ============================================================ */
 
 app.use("/api", (_req, res) => {
-  res.status(404).json({
+  return res.status(404).json({
     error: "MindSync API endpoint not found.",
   });
 });
@@ -1527,9 +1302,18 @@ app.use("/api", (_req, res) => {
    ============================================================ */
 
 app.use((error, _req, res, _next) => {
-  console.error("[Express]", error);
+  console.error("[Express]", error?.message || error);
 
-  res.status(500).json({
+  /*
+   * CORS errors should be returned as 403.
+   */
+  if (error?.message?.startsWith("CORS:")) {
+    return res.status(403).json({
+      error: "Request origin is not allowed.",
+    });
+  }
+
+  return res.status(500).json({
     error: "Internal MindSync server error.",
   });
 });
@@ -1538,13 +1322,15 @@ app.use((error, _req, res, _next) => {
    START SERVER
    ============================================================ */
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log("");
   console.log("==============================================");
   console.log("             MindSync AI Server");
   console.log("==============================================");
 
-  console.log(`Server: http://localhost:${PORT}`);
+  console.log(`Environment: ${NODE_ENV}`);
+
+  console.log(`Port: ${PORT}`);
 
   console.log(`Health: http://localhost:${PORT}/api/health`);
 
@@ -1558,10 +1344,38 @@ app.listen(PORT, () => {
 
   console.log(`API key:  ${GROQ_API_KEY ? "configured" : "MISSING"}`);
 
+  console.log(
+    `CORS origins: ${frontendUrls.length ? frontendUrls.join(", ") : "NONE"}`,
+  );
+
   console.log("==============================================");
 
   console.log("");
 });
+
+/* ============================================================
+   GRACEFUL SHUTDOWN
+   ============================================================ */
+
+function shutdown(signal) {
+  console.log(`\n${signal} received. Shutting down MindSync server...`);
+
+  server.close(() => {
+    console.log("MindSync server stopped.");
+
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error("Forced shutdown.");
+
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 /* ============================================================
    HELPERS
