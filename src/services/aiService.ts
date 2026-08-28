@@ -1,7 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
-if (!API_BASE_URL) {
-  throw new Error("Missing VITE_API_URL environment configuration.");
-}
+const API_BASE_URL = "https://mindsync-wellbeing-platform.onrender.com";
 
 export type ChatMessage = {
   sender: "student" | "mindSync";
