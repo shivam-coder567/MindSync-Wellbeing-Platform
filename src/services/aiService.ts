@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:3001"
+).replace(/\/$/, "");
+
 export type ChatMessage = {
   sender: "student" | "mindSync";
   text: string;
@@ -8,48 +11,34 @@ export type MindSyncContextPayload = {
   recentMood: number | null;
   recentStress: number | null;
   recentAnxiety: number | null;
-
   moodTrend: "improving" | "declining" | "stable";
   stressTrend: "improving" | "declining" | "stable";
   anxietyTrend: "improving" | "declining" | "stable";
-
   recentNotes: string[];
-
   recentConversationMessages: {
     sender: "student" | "mindSync";
     text: string;
   }[];
-
   conversationTitle?: string;
-
   recentActivities?: string[];
 };
 
-/* ─────────────────────────────────────────────────────────────
-   API CONFIGURATION
-───────────────────────────────────────────────────────────── */
-
-/**
- * The Express API URL comes from the Vite environment.
- *
- * Local:
- * VITE_API_URL=http://localhost:3001
- *
- * Production:
- * VITE_API_URL=https://your-api-domain.com
- */
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-
-if (!API_BASE_URL) {
-  throw new Error(
-    "Missing VITE_API_URL environment configuration. " +
-      "Add VITE_API_URL to your frontend environment variables.",
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
-   AI CHAT
-───────────────────────────────────────────────────────────── */
+export type WellnessMetrics = {
+  checkInCount: number;
+  daysCovered: number;
+  recentMood: number | null;
+  recentStress: number | null;
+  recentAnxiety: number | null;
+  baselineMood: number | null;
+  baselineStress: number | null;
+  baselineAnxiety: number | null;
+  trends: {
+    label: string;
+    direction: string;
+    strength: string;
+  }[];
+  recentNotes: string[];
+};
 
 export async function getAIResponse(
   message: string,
@@ -78,7 +67,7 @@ export async function getAIResponse(
         errorMessage = errorData.error;
       }
     } catch {
-      // Keep the default error message.
+      // Keep default error message.
     }
 
     throw new Error(errorMessage);
@@ -92,31 +81,6 @@ export async function getAIResponse(
 
   return data.response.trim();
 }
-
-/* ─────────────────────────────────────────────────────────────
-   WELLNESS INSIGHT
-───────────────────────────────────────────────────────────── */
-
-export type WellnessMetrics = {
-  checkInCount: number;
-  daysCovered: number;
-
-  recentMood: number | null;
-  recentStress: number | null;
-  recentAnxiety: number | null;
-
-  baselineMood: number | null;
-  baselineStress: number | null;
-  baselineAnxiety: number | null;
-
-  trends: {
-    label: string;
-    direction: string;
-    strength: string;
-  }[];
-
-  recentNotes: string[];
-};
 
 export async function getWellnessInsight(
   metrics: WellnessMetrics,
@@ -141,7 +105,7 @@ export async function getWellnessInsight(
         errorMessage = errorData.error;
       }
     } catch {
-      // Keep the default error message.
+      // Keep default error message.
     }
 
     throw new Error(errorMessage);
