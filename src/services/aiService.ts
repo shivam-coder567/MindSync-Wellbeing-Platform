@@ -1,6 +1,7 @@
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:3001"
-).replace(/\/$/, "");
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
+if (!API_BASE_URL) {
+  throw new Error("Missing VITE_API_URL environment configuration.");
+}
 
 export type ChatMessage = {
   sender: "student" | "mindSync";
