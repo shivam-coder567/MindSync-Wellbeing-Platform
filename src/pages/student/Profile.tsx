@@ -26,6 +26,7 @@ import {
   updateTrustedContact,
   type TrustedContact,
 } from "../../services/studentService";
+import ProfileImageCropper from "../../components/ProfileImageCropper";
 import { supabase } from "../../supabaseClient";
 
 import avatar1 from "../../assets/avatars/avatar-1.svg";
@@ -71,6 +72,7 @@ export default function Profile() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [showAvatars, setShowAvatars] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   // -----------------------------------------
   // EDIT PROFILE
@@ -232,28 +234,30 @@ export default function Profile() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setMessage("Please choose an image smaller than 2 MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage("Please choose an image smaller than 5 MB.");
       return;
     }
 
+    // Open cropper instead of uploading directly
+    setCropFile(file);
+    setMessage("");
+  }
+
+  async function handleCropSave(blob: Blob) {
+    if (!profile || !user) return;
+
+    setCropFile(null);
     setBusy(true);
     setMessage("");
 
     try {
-      const extension =
-        file.type === "image/png"
-          ? "png"
-          : file.type === "image/webp"
-            ? "webp"
-            : "jpg";
-
-      const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("profile-photos")
-        .upload(path, file, {
-          contentType: file.type,
+        .upload(path, blob, {
+          contentType: "image/jpeg",
           upsert: false,
         });
 
@@ -1588,6 +1592,18 @@ export default function Profile() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* =========================================
+          IMAGE CROPPER MODAL
+      ========================================== */}
+
+      {cropFile && (
+        <ProfileImageCropper
+          file={cropFile}
+          onCrop={handleCropSave}
+          onCancel={() => setCropFile(null)}
+        />
       )}
 
       {showDeleteAccount && (
